@@ -1,17 +1,21 @@
 #include <Arduino.h>
-#include <IoAbstraction.h>
-#include "pinDefines.h"
+#include <XPOModel.h>
+#include <pinDefines.h>
 
-
+XPOModel xpoModel;
 void setup()
 {
   // put your setup code here, to run once:
-  switches.initialise(ioUsingArduino());                       // pull up logic is optional, defaults to PULL_DOWN buttons.
-  switches.addSwitch(spinwheelClickPin, onClicked, NO_REPEAT); // NO_REPEAT is optional, sets the repeat interval in 100s of second.
+  Serial.println(K1_SW);
 }
 
 void loop()
 {
+  xpoModel.initialize();
   // put your main code here, to run repeatedly:
-  taskManager.runLoop();
+  // xpoModel.update();
 }
+
+// class Button(input pin)
+// emitter --> on clicked
+// readonly onClick
