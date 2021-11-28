@@ -16,8 +16,8 @@
 #define K12_SW 49
 #define K13_SW 37
 #define K14_SW 38
-//#define K15_SW PTA1// BAD SCHEM
-#define K16_SW // HOOKED UP TO USB NATIVE PORTS, DUMB
+#define K15_SW A25// BAD SCHEM UD+
+#define K16_SW A26 // HOOKED UP TO USB NATIVE PORTS, DUMB UD-
 
 #define P1_SW 12
 #define P2_SW 24

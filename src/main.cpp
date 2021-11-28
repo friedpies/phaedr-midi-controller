@@ -19,6 +19,7 @@ int kSwitches[] = {
     K12_SW,
     K13_SW,
     K14_SW,
+    K15_SW,
     K16_SW // HOOKED UP TO USB NATIVE PORTS, DUMB
 };
 
@@ -37,7 +38,7 @@ int kLEDs[] = {
     LED_K12,
     LED_K13,
     LED_K14,
-    //LED_K15,
+    LED_K15,
     LED_K16};
 
 int pSwitches[] = {
@@ -83,12 +84,12 @@ int sliders[] = {
 void setup()
 {
   // put your setup code here, to run once:
-  for (int i = 0; i < 14; i++)
+  for (int i = 0; i < 16; i++)
   {
     pinMode(kSwitches[i], INPUT_PULLUP);
   }
 
-  for (int i = 0; i < 14; i++)
+  for (int i = 0; i < 16; i++)
   {
     pinMode(kLEDs[i], OUTPUT);
     digitalWrite(kLEDs[i], LOW);
@@ -104,11 +105,12 @@ void setup()
 
 void loop()
 {
-  for (int i = 0; i < 14; i++)
+  for (int i = 0; i < 16; i++)
   {
     int value = digitalRead(kSwitches[i]);
     digitalWrite(kLEDs[i], !value);
     Serial.print("G");
+    Serial.print(i);
     Serial.print(":");
     Serial.print(value);
     Serial.print("  ");
