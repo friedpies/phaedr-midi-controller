@@ -1,5 +1,8 @@
-// 
-#define K1_SW 13
+#define K1_SW 13 // MUST REMOVE ONBOARD LED FOR THIS TO WORK (WORKS FINE)
+//LED Pin
+// Pin 13 has an orange LED connected. The LED can be very convenient to show status info. 
+//When pin 13 is used as an input, the external signal must be able to drive the LED when logic HIGH. 
+// pinMode INPUT_PULLUP should not be used with pin 13.
 #define K2_SW 0
 #define K3_SW 1
 #define K4_SW 11
@@ -13,7 +16,7 @@
 #define K12_SW 49
 #define K13_SW 37
 #define K14_SW 38
-#define K15_SW PTA1// BAD SCHEM
+//#define K15_SW PTA1// BAD SCHEM
 #define K16_SW // HOOKED UP TO USB NATIVE PORTS, DUMB
 
 #define P1_SW 12
