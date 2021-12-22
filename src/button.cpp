@@ -5,15 +5,24 @@ void Button::init()
     button.attach(_buttonPin, INPUT_PULLUP);
     button.interval(_debounceTime);
     pinMode(_ledPin, OUTPUT);
-    digitalWrite(_ledPin, LOW);
+    digitalWrite(_ledPin, ledState);
 }
 
 void Button::read()
 {
     button.update();
-    if (button.pressed())
+    if (button.changed())
     {
-        digitalWrite(_ledPin, HIGH);
-        // std::cout << "Button: " << _buttonPin << "Pressed" << std::endl;
+        if (button.fell())
+        {
+            ledState = !ledState;
+            digitalWrite(_ledPin, ledState);
+        }
+        else
+        {
+            // Serial.println("ROSE");
+        }
     }
+    // digitalWrite(_ledPin, HIGH);
+    // std::cout << "Button: " << _buttonPin << "Pressed" << std::endl;
 }
