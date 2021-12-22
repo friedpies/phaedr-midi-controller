@@ -6,6 +6,8 @@
 #include "inputManager.h"
 #include "button.h"
 
+const int DEFAULT_MIDI_CHANNEL = 1;
+
 InputManager inputManager = InputManager();
 
 void setup()

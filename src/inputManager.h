@@ -16,32 +16,32 @@ public:
     static const int DEBOUNCE_TIME = 50;
 
     Button gridButtons[NUM_GRID_BUTTONS] = {
-        Button(K1_SW, LED_K1, DEBOUNCE_TIME),
-        Button(K2_SW, LED_K2, DEBOUNCE_TIME),
-        Button(K3_SW, LED_K3, DEBOUNCE_TIME),
-        Button(K4_SW, LED_K4, DEBOUNCE_TIME),
-        Button(K5_SW, LED_K5, DEBOUNCE_TIME),
-        Button(K6_SW, LED_K6, DEBOUNCE_TIME),
-        Button(K7_SW, LED_K7, DEBOUNCE_TIME),
-        Button(K8_SW, LED_K8, DEBOUNCE_TIME),
-        Button(K9_SW, LED_K9, DEBOUNCE_TIME),
-        Button(K10_SW, LED_K10, DEBOUNCE_TIME),
-        Button(K11_SW, LED_K11, DEBOUNCE_TIME),
-        Button(K12_SW, LED_K12, DEBOUNCE_TIME),
-        Button(K13_SW, LED_K13, DEBOUNCE_TIME),
-        Button(K14_SW, LED_K14, DEBOUNCE_TIME),
-        Button(K15_SW, LED_K15, DEBOUNCE_TIME),
-        Button(K16_SW, LED_K16, DEBOUNCE_TIME)};
+        Button(K1_SW, LED_K1, 102, DEBOUNCE_TIME),
+        Button(K2_SW, LED_K2, 103, DEBOUNCE_TIME),
+        Button(K3_SW, LED_K3, 104, DEBOUNCE_TIME),
+        Button(K4_SW, LED_K4, 105, DEBOUNCE_TIME),
+        Button(K5_SW, LED_K5, 106, DEBOUNCE_TIME),
+        Button(K6_SW, LED_K6, 107, DEBOUNCE_TIME),
+        Button(K7_SW, LED_K7, 108, DEBOUNCE_TIME),
+        Button(K8_SW, LED_K8, 109, DEBOUNCE_TIME),
+        Button(K9_SW, LED_K9, 110, DEBOUNCE_TIME),
+        Button(K10_SW, LED_K10, 111, DEBOUNCE_TIME),
+        Button(K11_SW, LED_K11, 112, DEBOUNCE_TIME),
+        Button(K12_SW, LED_K12, 113, DEBOUNCE_TIME),
+        Button(K13_SW, LED_K13, 114, DEBOUNCE_TIME),
+        Button(K14_SW, LED_K14, 115, DEBOUNCE_TIME),
+        Button(K15_SW, LED_K15, 116, DEBOUNCE_TIME),
+        Button(K16_SW, LED_K16, 117, DEBOUNCE_TIME)};
 
     Button trackButtons[NUM_TRACKS] = {
-        Button(P1_SW, LED_P1, DEBOUNCE_TIME),
-        Button(P2_SW, LED_P2, DEBOUNCE_TIME),
-        Button(P3_SW, LED_P3, DEBOUNCE_TIME),
-        Button(P4_SW, LED_P4, DEBOUNCE_TIME),
-        Button(P5_SW, LED_P5, DEBOUNCE_TIME),
-        Button(P6_SW, LED_P6, DEBOUNCE_TIME),
-        Button(P7_SW, LED_P7, DEBOUNCE_TIME),
-        Button(P8_SW, LED_P8, DEBOUNCE_TIME)};
+        Button(P1_SW, LED_P1, 20, DEBOUNCE_TIME),
+        Button(P2_SW, LED_P2, 21, DEBOUNCE_TIME),
+        Button(P3_SW, LED_P3, 22, DEBOUNCE_TIME),
+        Button(P4_SW, LED_P4, 23, DEBOUNCE_TIME),
+        Button(P5_SW, LED_P5, 24, DEBOUNCE_TIME),
+        Button(P6_SW, LED_P6, 25, DEBOUNCE_TIME),
+        Button(P7_SW, LED_P7, 26, DEBOUNCE_TIME),
+        Button(P8_SW, LED_P8, 27, DEBOUNCE_TIME)};
 
     Potentiometer trackKnobs[NUM_TRACKS] = {
         Potentiometer(KNOB_1, 20),

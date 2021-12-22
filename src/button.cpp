@@ -17,6 +17,11 @@ void Button::read()
         {
             ledState = !ledState;
             digitalWrite(_ledPin, ledState);
+            if (ledState == HIGH) {
+            usbMIDI.sendControlChange(_ccNum, 127, 1);
+            } else {
+                usbMIDI.sendControlChange(_ccNum, 0, 1);
+            }
         }
         else
         {

@@ -3,13 +3,15 @@
 
 #include <Arduino.h>
 #include <Bounce2.h>
+#include <MIDIUSB.h>
 
 class Button
 {
 public:
-    Button(int buttonPin, int ledPin, uint32_t debounceTime) : _buttonPin(buttonPin),
-                                                               _ledPin(ledPin),
-                                                               _debounceTime(debounceTime)
+    Button(int buttonPin, int ledPin, int ccNum, uint32_t debounceTime) : _buttonPin(buttonPin),
+                                                                          _ledPin(ledPin),
+                                                                          _ccNum(ccNum),
+                                                                          _debounceTime(debounceTime)
     {
     }
 
@@ -19,6 +21,7 @@ public:
 private:
     int _buttonPin;
     int _ledPin;
+    int _ccNum;
     bool ledState = LOW;
     uint32_t _debounceTime;
     Bounce button = Bounce();
