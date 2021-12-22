@@ -1,8 +1,7 @@
 #include <Arduino.h>
-#include <XPOModel.h>
-#include <pinDefines.h>
-
-XPOModel xpoModel;
+#include "pinDefines.h"
+#include "buttonManager.h"
+#include "button.h"
 
 int kSwitches[] = {
     K1_SW,
@@ -22,6 +21,14 @@ int kSwitches[] = {
     K15_SW,
     K16_SW // HOOKED UP TO USB NATIVE PORTS, DUMB
 };
+
+// Button gridButtons[16] = createButtons();
+
+// Button *createButtons()
+// {
+//   // Button buttons[16] = {};
+//   return buttons;
+// }
 
 int kLEDs[] = {
     LED_K1,
@@ -81,72 +88,18 @@ int sliders[] = {
     SLIDE_7,
     SLIDE_8};
 
+ButtonManager buttonManager = ButtonManager();
+
 void setup()
 {
-  // put your setup code here, to run once:
-  for (int i = 0; i < 16; i++)
-  {
-    pinMode(kSwitches[i], INPUT_PULLUP);
-  }
-
-  for (int i = 0; i < 16; i++)
-  {
-    pinMode(kLEDs[i], OUTPUT);
-    digitalWrite(kLEDs[i], LOW);
-  }
-
-  for (int i = 0; i < 8; i++)
-  {
-    pinMode(pSwitches[i], INPUT_PULLUP);
-    pinMode(pLEDs[i], OUTPUT);
-    digitalWrite(pLEDs[i], LOW);
-  }
+  buttonManager.init();
+  
 }
 
 void loop()
 {
-  for (int i = 0; i < 16; i++)
-  {
-    int value = digitalRead(kSwitches[i]);
-    digitalWrite(kLEDs[i], !value);
-    Serial.print("G");
-    Serial.print(i);
-    Serial.print(":");
-    Serial.print(value);
-    Serial.print("  ");
-  }
-
-  for (int i = 0; i < 8; i++)
-  {
-    int value = digitalRead(pSwitches[i]);
-    digitalWrite(pLEDs[i], !value);
-    Serial.print("P");
-    Serial.print(":");
-    Serial.print(value);
-    Serial.print("  ");
-  }
-
-  for (int i = 0; i < 8; i++)
-  {
-    int value = analogRead(knobs[i]);
-    Serial.print("K");
-    Serial.print(":");
-    Serial.print(value);
-    Serial.print("  ");
-  }
-
-  for (int i = 0; i < 8; i++)
-  {
-    int value = analogRead(sliders[i]);
-    Serial.print("S");
-    Serial.print(":");
-    Serial.print(value);
-    Serial.print("  ");
-    if (i == 7)
-    {
-      Serial.println();
-    }
-  }
+Serial.println("LOOP");
+  buttonManager.readAll();
 }
 
 // class Button(input pin)
