@@ -1,7 +1,13 @@
+#define ENABLEMIDI 1
+
 #include <Arduino.h>
+
+#ifdef ENABLEMIDI
 #include <MIDIUSB.h>
 #include <MIDI.h>
 #include <MIDI.hpp>
+#endif
+
 #include "pinDefines.h"
 #include "inputManager.h"
 #include "button.h"
@@ -9,16 +15,30 @@
 const int DEFAULT_MIDI_CHANNEL = 1;
 
 InputManager inputManager = InputManager();
+// void OnNoteOn(byte channel, byte note, byte velocity)
+// {
+//     digitalWrite(LED_K1, HIGH); // Any Note-On turns on LED
+// }
+
+// void OnNoteOFF(byte channel, byte note, byte velocity)
+// {
+//     digitalWrite(LED_K1, LOW); // Any Note-On turns on LED
+// }
+void handleControlChangeMessage(byte channel, byte ccNum, byte velocity)
+{
+    inputManager.handleControlChangeMessage(channel, ccNum, velocity);
+}
 
 void setup()
 {
     inputManager.init();
+    usbMIDI.setHandleControlChange(handleControlChangeMessage);
 }
 
 void loop()
 {
-    //    myButton.read();
     inputManager.readAll();
+    usbMIDI.read();
 }
 
 // class Button(input pin)

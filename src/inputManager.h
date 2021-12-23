@@ -11,9 +11,10 @@ class InputManager
 public:
     void init();
     void readAll();
+    void handleControlChangeMessage(byte channel, byte ccNum, byte velocity);
     static const int NUM_GRID_BUTTONS = 16;
     static const int NUM_TRACKS = 8;
-    static const int DEBOUNCE_TIME = 50;
+    static const int DEBOUNCE_TIME = 20;
 
     Button gridButtons[NUM_GRID_BUTTONS] = {
         Button(K1_SW, LED_K1, 102, DEBOUNCE_TIME),
@@ -44,14 +45,24 @@ public:
         Button(P8_SW, LED_P8, 27, DEBOUNCE_TIME)};
 
     Potentiometer trackKnobs[NUM_TRACKS] = {
-        Potentiometer(KNOB_1, 20),
-        Potentiometer(KNOB_2, 21),
-        Potentiometer(KNOB_3, 22),
-        Potentiometer(KNOB_4, 23),
-        Potentiometer(KNOB_5, 24),
-        Potentiometer(KNOB_6, 25),
-        Potentiometer(KNOB_7, 26),
-        Potentiometer(KNOB_8, 26)};
+        Potentiometer(KNOB_1, 14, true),
+        Potentiometer(KNOB_2, 15, true),
+        Potentiometer(KNOB_3, 28, true),
+        Potentiometer(KNOB_4, 29, true),
+        Potentiometer(KNOB_5, 30, true),
+        Potentiometer(KNOB_6, 31, true),
+        Potentiometer(KNOB_7, 118, true),
+        Potentiometer(KNOB_8, 119, true)};
+
+    Potentiometer trackSliders[NUM_TRACKS] = {
+        Potentiometer(SLIDE_1, 85),
+        Potentiometer(SLIDE_2, 86),
+        Potentiometer(SLIDE_3, 87),
+        Potentiometer(SLIDE_4, 88),
+        Potentiometer(SLIDE_5, 89),
+        Potentiometer(SLIDE_6, 90),
+        Potentiometer(SLIDE_7, 3),
+        Potentiometer(SLIDE_8, 9)};
 };
 
 #endif

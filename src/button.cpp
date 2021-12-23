@@ -17,9 +17,12 @@ void Button::read()
         {
             ledState = !ledState;
             digitalWrite(_ledPin, ledState);
-            if (ledState == HIGH) {
-            usbMIDI.sendControlChange(_ccNum, 127, 1);
-            } else {
+            if (ledState == HIGH)
+            {
+                usbMIDI.sendControlChange(_ccNum, 127, 1);
+            }
+            else
+            {
                 usbMIDI.sendControlChange(_ccNum, 0, 1);
             }
         }
@@ -30,4 +33,10 @@ void Button::read()
     }
     // digitalWrite(_ledPin, HIGH);
     // std::cout << "Button: " << _buttonPin << "Pressed" << std::endl;
+}
+
+void Button::setLedState(bool newState)
+{
+    ledState = newState; // TODO add underscore
+    digitalWrite(_ledPin, ledState);
 }

@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <Bounce2.h>
+
 #include <MIDIUSB.h>
 
 class Button
@@ -17,6 +18,7 @@ public:
 
     void init();
     void read();
+    void setLedState(bool newState);
 
 private:
     int _buttonPin;
