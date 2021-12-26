@@ -19,6 +19,7 @@ public:
     void init();
     void read();
     void setLedState(bool newState);
+    int getLEDPin();
 
 private:
     int _buttonPin;

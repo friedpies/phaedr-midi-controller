@@ -13,11 +13,11 @@ void Button::read()
     button.update();
     if (button.changed())
     {
-        if (button.fell())
+        if (button.rose())
         {
             ledState = !ledState;
-            digitalWrite(_ledPin, ledState);
-            if (ledState == HIGH)
+            // digitalWrite(_ledPin, ledState);
+            if (ledState == LOW)
             {
                 usbMIDI.sendControlChange(_ccNum, 127, 1);
             }
@@ -39,4 +39,9 @@ void Button::setLedState(bool newState)
 {
     ledState = newState; // TODO add underscore
     digitalWrite(_ledPin, ledState);
+}
+
+int Button::getLEDPin()
+{
+    return _ledPin;
 }

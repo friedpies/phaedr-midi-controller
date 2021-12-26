@@ -24,8 +24,10 @@ void InputManager::handleControlChangeMessage(byte channel, byte ccNum, byte vel
         }
         else if (ccNum >= 20 && ccNum <= 27)
         {
-            int buttonIndex = ccNum - 27;
+            int buttonIndex = ccNum - 20;
             Button button = trackButtons[buttonIndex];
+            Serial.print("VELOCITY INCOMING: ");
+            Serial.println(velocity);
             button.setLedState(velocity == 127 ? HIGH : LOW);
         }
     }
