@@ -8,7 +8,7 @@
 class ButtonRegistry
 {
 public:
-    Button *registerButton(int buttonPin, int ledPin, int ccNum, uint32_t debounceTime);
+    Button *registerButton(int buttonPin, int ledPin, int ccNum, int debounceTime);
     std::map<int, Button*> ccNumToButton;
 };
 

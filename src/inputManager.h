@@ -2,6 +2,7 @@
 #define button_manager
 
 #include <Arduino.h>
+#include <SoftPWM.h>
 #include "button.h"
 #include "pinDefines.h"
 #include "potentiometer.h"

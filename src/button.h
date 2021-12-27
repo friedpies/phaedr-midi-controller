@@ -3,13 +3,14 @@
 
 #include <Arduino.h>
 #include <Bounce2.h>
+#include <SoftPWM.h>
 
 #include <MIDIUSB.h>
 
 class Button
 {
 public:
-    Button(int buttonPin, int ledPin, int ccNum, uint32_t debounceTime) : _buttonPin(buttonPin),
+    Button(int buttonPin, int ledPin, int ccNum, int debounceTime) : _buttonPin(buttonPin),
                                                                           _ledPin(ledPin),
                                                                           _ccNum(ccNum),
                                                                           _debounceTime(debounceTime)
@@ -26,7 +27,8 @@ private:
     int _ledPin;
     int _ccNum;
     bool ledState = LOW;
-    uint32_t _debounceTime;
+    int ledStateToPWM(bool state);
+    int _debounceTime;
     Bounce button = Bounce();
 };
 

@@ -2,6 +2,10 @@
 
 void InputManager::init()
 {
+    SoftPWMBegin();
+    // SoftPWMSetFadeTime(ALL, 100, 100);
+    // SoftPWMSetFadeTime(ALL, 500, 500);
+
     for (int i = 0; i < NUM_GRID_BUTTONS; i++)
     {
         gridButtons[i].init();

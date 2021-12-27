@@ -26,13 +26,32 @@ InputManager inputManager = InputManager();
 // }
 void handleControlChangeMessage(byte channel, byte ccNum, byte velocity)
 {
+    Serial.println("CONTROL CHANGE");
     inputManager.handleControlChangeMessage(channel, ccNum, velocity);
+}
+
+void handleStart()
+{
+    Serial.println("HANDLE START");
+}
+
+void handleClock()
+{
+    Serial.println("HANDLE CLOCK");
+}
+
+void handleStop()
+{
+    // Serial.println("HANDLE STOP");
 }
 
 void setup()
 {
     inputManager.init();
     usbMIDI.setHandleControlChange(handleControlChangeMessage);
+    usbMIDI.setHandleStart(handleStart);
+    usbMIDI.setHandleClock(handleClock);
+    usbMIDI.setHandleStop(handleStop);
 }
 
 void loop()
