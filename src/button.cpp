@@ -13,7 +13,7 @@ void Button::read()
     button.update();
     if (button.changed())
     {
-        if (button.rose())
+        if (button.fell())
         {
             ledState = !ledState;
             // digitalWrite(_ledPin, ledState);
