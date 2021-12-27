@@ -14,20 +14,11 @@ void InputManager::init()
 
 void InputManager::handleControlChangeMessage(byte channel, byte ccNum, byte velocity)
 {
-    if (channel == 1) // TODO don't know how to do this in Cpp, likely a lookup table or something
+    if (channel == 1)
     {
-        if (ccNum >= 102 && ccNum <= 117)
+        if ((ccNum >= 102 && ccNum <= 117) || (ccNum >= 20 && ccNum <= 27))
         {
-            int buttonIndex = ccNum - 102;
-            Button button = gridButtons[buttonIndex];
-            button.setLedState(velocity == 127 ? HIGH : LOW);
-        }
-        else if (ccNum >= 20 && ccNum <= 27)
-        {
-            int buttonIndex = ccNum - 20;
-            Button button = trackButtons[buttonIndex];
-            Serial.print("VELOCITY INCOMING: ");
-            Serial.println(velocity);
+            Button button = *(buttonRegistry.ccNumToButton[ccNum]);
             button.setLedState(velocity == 127 ? HIGH : LOW);
         }
     }
