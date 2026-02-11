@@ -1,5 +1,7 @@
 # Phaedr MIDI Controller
 
+See the [hackaday](https://hackaday.io/project/204994-phaedr-midi-controller) project
+
 USB MIDI controller firmware for Teensy 3.5. A custom control surface with 16 grid buttons, 8 track buttons, 8 rotary knobs, and 8 sliders — designed for bidirectional communication with a DAW.
 
 This project started in 2021 as a pandemic side project — custom PCB, custom enclosure, and firmware from scratch. The goal was less about building the most practical MIDI controller and more about a fun design challenge: use a Teensy 3.5 and max out every available pin. I got distracted along the way and never finished it, but now with the help of Claude Code I'm eager to wrap up the loose ends. The Teensy 3.5 is largely deprecated at this point, though most of the firmware should be portable to a Teensy 4.1 with pin remapping.
