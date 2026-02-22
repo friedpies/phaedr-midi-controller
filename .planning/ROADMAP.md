@@ -27,7 +27,7 @@ This milestone converts the existing CC-based Teensy 3.5 firmware into a Mackie 
 **Plans**: 5 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Fix copy-by-value Button bug (FIX-01) and remove Serial.println from MIDI callbacks (FIX-02)
+- [x] 01-01-PLAN.md — Fix copy-by-value Button bug (FIX-01) and remove Serial.println from MIDI callbacks (FIX-02)
 - [ ] 01-02-PLAN.md — Create MCUButton class (Note Bang, LED via setLedState with LED_MAX_BRIGHTNESS cap) and NoteRegistry; add LED_MAX_BRIGHTNESS to pinDefines.h (PWR-01)
 - [ ] 01-03-PLAN.md — Create Fader class (14-bit Pitch Bend per MIDI channel) and document knob CC reassignment
 - [ ] 01-04-PLAN.md — Create MCUProtocol class (4-step SysEx handshake state machine, retry timer)
@@ -72,7 +72,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. MCU Protocol Foundation | 0/5 | Not started | - |
+| 1. MCU Protocol Foundation | 1/5 | In progress | - |
 | 2. LED State + Pickup Mode | 0/TBD | Not started | - |
 | 3. Grid Transport Layout | 0/TBD | Not started | - |
 | 4. Animation Manager | 0/TBD | Not started | - |

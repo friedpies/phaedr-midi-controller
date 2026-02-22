@@ -71,8 +71,8 @@
 
 ### Codebase Cleanup (Prerequisites)
 
-- [ ] **FIX-01**: Fix copy-by-value Button bug in `inputManager.cpp:25` — use pointer or reference so DAW-driven `setLedState()` calls actually update physical LEDs
-- [ ] **FIX-02**: Remove `Serial.println("CONTROL CHANGE")` from MIDI callbacks — debug output causes timing jitter at 24 PPQN clock rates
+- [x] **FIX-01**: Fix copy-by-value Button bug in `inputManager.cpp:25` — use pointer or reference so DAW-driven `setLedState()` calls actually update physical LEDs
+- [x] **FIX-02**: Remove `Serial.println("CONTROL CHANGE")` from MIDI callbacks — debug output causes timing jitter at 24 PPQN clock rates
 
 ## v2 Requirements
 
