@@ -14,23 +14,24 @@ This milestone converts the existing CC-based Teensy 3.5 firmware into a Mackie 
 ## Phase Details
 
 ### Phase 1: MCU Protocol Foundation
-**Goal**: Logic Pro recognizes the device as a Mackie Control surface, channel strip buttons and transport buttons drive LEDs bidirectionally, and faders send 14-bit pitch bend on per-channel MIDI channels
+**Goal**: Logic Pro recognizes the device as a Mackie Control surface, channel strip buttons and transport buttons drive LEDs bidirectionally, faders send 14-bit pitch bend on per-channel MIDI channels, a cascade animation plays on power-on, and LED brightness is capped within USB power budget
 **Depends on**: Nothing (first phase)
-**Requirements**: FIX-01, FIX-02, MCU-01, MCU-02, MCU-03, MCU-04, MCU-05, MCU-06, LED-01, LED-02, LED-04
+**Requirements**: FIX-01, FIX-02, MCU-01, MCU-02, MCU-03, MCU-04, MCU-05, MCU-06, LED-01, LED-02, LED-04, PWR-01, BOOT-01
 **Success Criteria** (what must be TRUE):
-  1. Logic Pro's Control Surfaces preference pane shows "Mackie Control" as an active surface after the Teensy powers on
-  2. Pressing a channel strip button (REC/SOLO/MUTE/SELECT) causes Logic to send a Note On back and the corresponding LED on the hardware lights up
-  3. Moving any of the 8 sliders causes Logic's on-screen fader to move; a MIDI monitor confirms the message is Pitch Bend (not CC) on the per-fader MIDI channel
-  4. Pressing Play, Stop, or Record on the hardware triggers the corresponding transport action in Logic; Logic's response Note On lights the appropriate LED
-  5. Plugging in the controller and opening a MIDI monitor shows no debug "CONTROL CHANGE" Serial output interfering with timing
+  1. Plugging in the controller triggers a cascade LED animation (K1→K16, then P1→P8) that completes before any MIDI activity begins
+  2. Logic Pro's Control Surfaces preference pane shows "Mackie Control" as an active surface after the Teensy powers on
+  3. Pressing a channel strip button (REC/SOLO/MUTE/SELECT) causes Logic to send a Note On back and the corresponding LED on the hardware lights up
+  4. Moving any of the 8 sliders causes Logic's on-screen fader to move; a MIDI monitor confirms the message is Pitch Bend (not CC) on the per-fader MIDI channel
+  5. Pressing Play, Stop, or Record on the hardware triggers the corresponding transport action in Logic; Logic's response Note On lights the appropriate LED
+  6. Plugging in the controller and opening a MIDI monitor shows no debug "CONTROL CHANGE" Serial output interfering with timing
 **Plans**: 5 plans
 
 Plans:
 - [ ] 01-01-PLAN.md — Fix copy-by-value Button bug (FIX-01) and remove Serial.println from MIDI callbacks (FIX-02)
-- [ ] 01-02-PLAN.md — Create MCUButton class (Note Bang, LED via setLedState) and NoteRegistry (note-to-MCUButton* map)
+- [ ] 01-02-PLAN.md — Create MCUButton class (Note Bang, LED via setLedState with LED_MAX_BRIGHTNESS cap) and NoteRegistry; add LED_MAX_BRIGHTNESS to pinDefines.h (PWR-01)
 - [ ] 01-03-PLAN.md — Create Fader class (14-bit Pitch Bend per MIDI channel) and document knob CC reassignment
 - [ ] 01-04-PLAN.md — Create MCUProtocol class (4-step SysEx handshake state machine, retry timer)
-- [ ] 01-05-PLAN.md — Integration: wire MCUButton, Fader, NoteRegistry, MCUProtocol into InputManager and main.cpp
+- [ ] 01-05-PLAN.md — Integration: wire MCUButton, Fader, NoteRegistry, MCUProtocol into InputManager and main.cpp; add cascade boot animation in setup() (BOOT-01)
 
 ### Phase 2: LED State + Pickup Mode
 **Goal**: Faders suppress MIDI output after a bank switch until the physical position crosses the DAW value, channel button LEDs blink while a fader is out of sync, and loop/punch/metronome state LEDs reflect real Logic state

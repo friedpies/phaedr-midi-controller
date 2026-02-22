@@ -64,6 +64,11 @@
 - [ ] **ACT-03**: Shift held: subtle dimmed glow on non-active, non-transport LEDs
 - [ ] **ACT-04**: All action animations are non-blocking; don't interrupt MIDI processing
 
+### Power & Boot
+
+- [ ] **PWR-01**: A compile-time constant `LED_MAX_BRIGHTNESS` (default 180, range 0–255) in `src/pinDefines.h` caps the SoftPWM value used for all "LED on" states; `MCUButton::setLedState(127)` sets brightness to `LED_MAX_BRIGHTNESS` (not 255), ensuring the 24-LED array stays within USB 500mA power budget (Teensy ~150mA + 24 LEDs at ≤14mA avg = ~490mA max)
+- [ ] **BOOT-01**: On power-on, a cascade startup animation lights each LED in sequence (K1→K16 grid row by row, then P1→P8 track buttons) and turns all off before MIDI callback registration; animation is a blocking call in `setup()` before `usbMIDI` handlers are registered, completing within 2 seconds
+
 ### Codebase Cleanup (Prerequisites)
 
 - [ ] **FIX-01**: Fix copy-by-value Button bug in `inputManager.cpp:25` — use pointer or reference so DAW-driven `setLedState()` calls actually update physical LEDs
@@ -113,6 +118,8 @@
 | LED-02 | Phase 1 | Pending |
 | LED-03 | Phase 2 | Pending |
 | LED-04 | Phase 1 | Pending |
+| PWR-01 | Phase 1 | Pending |
+| BOOT-01 | Phase 1 | Pending |
 | PICK-01 | Phase 2 | Pending |
 | PICK-02 | Phase 2 | Pending |
 | PICK-03 | Phase 2 | Pending |
@@ -143,10 +150,10 @@
 | ACT-04 | Phase 4 | Pending |
 
 **Coverage:**
-- v1 requirements: 40 total
-- Mapped to phases: 40
+- v1 requirements: 42 total
+- Mapped to phases: 42
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-02-21*
-*Last updated: 2026-02-21 after initial definition*
+*Last updated: 2026-02-21 — added PWR-01 (USB current budget) and BOOT-01 (startup animation) to Phase 1*
