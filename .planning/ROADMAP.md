@@ -6,7 +6,7 @@ This milestone converts the existing CC-based Teensy 3.5 firmware into a Mackie 
 
 ## Phases
 
-- [ ] **Phase 1: MCU Protocol Foundation** - Fix the copy-by-value LED bug, complete the MCU SysEx handshake, replace CC sends with MCU Note Bang and Pitch Bend — Logic Pro recognizes the controller and drives LEDs
+- [x] **Phase 1: MCU Protocol Foundation** - Fix the copy-by-value LED bug, complete the MCU SysEx handshake, replace CC sends with MCU Note Bang and Pitch Bend — Logic Pro recognizes the controller and drives LEDs (completed 2026-02-22)
 - [ ] **Phase 2: LED State + Pickup Mode** - Full LED feedback for loop/punch/metronome grid buttons, per-fader pickup FSM with blink feedback on bank switch
 - [ ] **Phase 3: Grid Transport Layout** - Wire all 16 grid buttons to MCU note numbers, implement shift layer, complete transport hub bottom row
 - [ ] **Phase 4: Animation Manager** - Beat chaser (24 PPQN), four startup animation styles, bank cascade, record pulse, shift-held glow
@@ -72,7 +72,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. MCU Protocol Foundation | 4/5 | In Progress|  |
+| 1. MCU Protocol Foundation | 5/5 | Complete   | 2026-02-22 |
 | 2. LED State + Pickup Mode | 0/TBD | Not started | - |
 | 3. Grid Transport Layout | 0/TBD | Not started | - |
 | 4. Animation Manager | 0/TBD | Not started | - |

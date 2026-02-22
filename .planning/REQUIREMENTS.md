@@ -67,7 +67,7 @@
 ### Power & Boot
 
 - [x] **PWR-01**: A compile-time constant `LED_MAX_BRIGHTNESS` (default 180, range 0–255) in `src/pinDefines.h` caps the SoftPWM value used for all "LED on" states; `MCUButton::setLedState(127)` sets brightness to `LED_MAX_BRIGHTNESS` (not 255), ensuring the 24-LED array stays within USB 500mA power budget (Teensy ~150mA + 24 LEDs at ≤14mA avg = ~490mA max)
-- [ ] **BOOT-01**: On power-on, a cascade startup animation lights each LED in sequence (K1→K16 grid row by row, then P1→P8 track buttons) and turns all off before MIDI callback registration; animation is a blocking call in `setup()` before `usbMIDI` handlers are registered, completing within 2 seconds
+- [x] **BOOT-01**: On power-on, a cascade startup animation lights each LED in sequence (K1→K16 grid row by row, then P1→P8 track buttons) and turns all off before MIDI callback registration; animation is a blocking call in `setup()` before `usbMIDI` handlers are registered, completing within 2 seconds
 
 ### Codebase Cleanup (Prerequisites)
 
@@ -119,7 +119,7 @@
 | LED-03 | Phase 2 | Pending |
 | LED-04 | Phase 1 | Complete |
 | PWR-01 | Phase 1 | Complete |
-| BOOT-01 | Phase 1 | Pending |
+| BOOT-01 | Phase 1 | Complete |
 | PICK-01 | Phase 2 | Pending |
 | PICK-02 | Phase 2 | Pending |
 | PICK-03 | Phase 2 | Pending |

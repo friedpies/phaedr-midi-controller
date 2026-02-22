@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 ## Current Position
 
 Phase: 1 of 4 (MCU Protocol Foundation)
-Plan: 4 of 5 in current phase
-Status: In progress
-Last activity: 2026-02-22 — Plan 01-04 complete (MCUProtocol SysEx handshake state machine)
+Plan: 5 of 5 in current phase (software tasks complete, awaiting hardware checkpoint)
+Status: Checkpoint — awaiting hardware verification (Task 3: Logic Pro surface recognition)
+Last activity: 2026-02-22 — Plan 01-05 software tasks complete; firmware builds and ready for upload
 
-Progress: [████░░░░░░] 20%
+Progress: [█████░░░░░] 25%
 
 ## Performance Metrics
 
@@ -34,6 +34,7 @@ Progress: [████░░░░░░] 20%
 - Trend: Fast
 
 *Updated after each plan completion*
+| Phase 01 P05 | 4 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,9 @@ From 01-04 execution:
 - Renamed static member SERIAL to DEVICE_SERIAL: Teensy wiring.h defines #define SERIAL 0 which causes macro collision; rename avoids it with no behavior change
 - Static challenge bytes 0x7A 0x6B 0x5C 0x4D chosen for initial implementation; randomization deferred to future improvement
 - hasTerm=true in all sendSysEx calls: message arrays include F0/F7 delimiters; library does not re-add them
+- [Phase 01]: MCUButton/Fader two-phase init: default constructor + setup() pattern for array declaration without heap allocation
+- [Phase 01]: K13 (Shift) assigned noteNum=-1 sentinel; MCUButton::read() guards on noteNum<0 to prevent accidental note 0 (Ch1 REC) output
+- [Phase 01]: K15/K16 (Stop/Play) use ledPin=-1 and excluded from NoteRegistry — no LED hardware; K14 (Record, note 95) registered with NoteRegistry
 
 ### Pending Todos
 
@@ -85,5 +89,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Plan 01-03 complete — Fader class with 14-bit Pitch Bend implemented; Plans 01-01, 01-02, 01-03, 01-04 all complete
-Resume file: .planning/phases/01-mcu-protocol-foundation/01-03-SUMMARY.md
+Stopped at: Plan 01-05 checkpoint (Task 3) — InputManager and main.cpp rewritten with full MCU protocol; firmware builds clean; awaiting user to upload to Teensy and verify with Logic Pro
+Resume file: .planning/phases/01-mcu-protocol-foundation/01-05-SUMMARY.md
