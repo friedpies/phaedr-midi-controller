@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 ## Current Position
 
 Phase: 1 of 4 (MCU Protocol Foundation)
-Plan: 5 of 5 in current phase (software tasks complete, awaiting hardware checkpoint)
-Status: Checkpoint — awaiting hardware verification (Task 3: Logic Pro surface recognition)
-Last activity: 2026-02-22 — Plan 01-05 software tasks complete; firmware builds and ready for upload
+Plan: 5 of 5 in current phase (ALL tasks complete; awaiting hardware re-verification after LED fixes)
+Status: Checkpoint — awaiting hardware re-verification (K13 + P8 LED failures fixed; upload and re-test)
+Last activity: 2026-02-22 — LED failures diagnosed and fixed; firmware builds clean; ready for re-upload
 
-Progress: [█████░░░░░] 25%
+Progress: [████████░░] 40%
 
 ## Performance Metrics
 
@@ -34,7 +34,7 @@ Progress: [█████░░░░░] 25%
 - Trend: Fast
 
 *Updated after each plan completion*
-| Phase 01 P05 | 4 | 2 tasks | 7 files |
+| Phase 01-mcu-protocol-foundation P05 | 8 | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -73,6 +73,7 @@ From 01-04 execution:
 - [Phase 01]: MCUButton/Fader two-phase init: default constructor + setup() pattern for array declaration without heap allocation
 - [Phase 01]: K13 (Shift) assigned noteNum=-1 sentinel; MCUButton::read() guards on noteNum<0 to prevent accidental note 0 (Ch1 REC) output
 - [Phase 01]: K15/K16 (Stop/Play) use ledPin=-1 and excluded from NoteRegistry — no LED hardware; K14 (Record, note 95) registered with NoteRegistry
+- [Phase 01-mcu-protocol-foundation]: SOFTPWM_MAXCHANNELS increased from 20 to 22 via local lib/SoftPWM/ vendoring — required to support all 22 LED channels (K1-K14 + P1-P8); K13 LED explicitly registered with SoftPWMSet despite ledPin=-1 in MCUButton
 
 ### Pending Todos
 
@@ -89,5 +90,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Plan 01-05 checkpoint (Task 3) — InputManager and main.cpp rewritten with full MCU protocol; firmware builds clean; awaiting user to upload to Teensy and verify with Logic Pro
+Stopped at: Plan 01-05 checkpoint (Task 3 re-verification) — K13 and P8 LED failures diagnosed (SoftPWM channel overflow + unregistered pin); both fixed; firmware builds clean; awaiting user to re-upload and re-verify all 24 LEDs in startup animation
 Resume file: .planning/phases/01-mcu-protocol-foundation/01-05-SUMMARY.md
