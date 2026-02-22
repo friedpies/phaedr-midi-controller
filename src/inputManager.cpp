@@ -70,6 +70,13 @@ void InputManager::init()
         trackButtons[i].init();
     }
 
+    // K13 (Shift) has ledPin=-1 so MCUButton::init() skips SoftPWM registration for it.
+    // But LED_K13 (pin 29) is real hardware that appears in the startup animation.
+    // Register it explicitly here so SoftPWMSet(LED_K13, ...) works during animation.
+    // K13 has no MCU note feedback in Phase 1, so it is not added to NoteRegistry.
+    SoftPWMSet(LED_K13, 0);
+    SoftPWMSetFadeTime(LED_K13, 125, 125);
+
     // ---- NoteRegistry — register all buttons with LEDs ----
     // Grid buttons K1–K12: MUTE/SELECT placeholders (have LEDs)
     noteRegistry.registerButton(16, &gridButtons[0]);   // K1  MUTE Ch1

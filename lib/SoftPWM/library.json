@@ -1,0 +1,13 @@
+{
+  "name": "SoftPWM",
+  "version": "1.0.1-local",
+  "description": "Local fork of bhagman/SoftPWM with SOFTPWM_MAXCHANNELS increased from 20 to 22 to support all 22 LED-equipped buttons on this controller (K1-K14 grid + P1-P8 track = 22 channels).",
+  "keywords": ["softpwm", "pwm", "led"],
+  "authors": [
+    {"name": "Brett Hagman", "url": "http://roguerobotics.com/"},
+    {"name": "Paul Stoffregen", "url": "http://pjrc.com/"}
+  ],
+  "license": "LGPL-2.1",
+  "frameworks": "arduino",
+  "platforms": "*"
+}
