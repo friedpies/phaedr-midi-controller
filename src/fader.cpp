@@ -1,8 +1,20 @@
 #include "fader.h"
 
+Fader::Fader()
+    : _pin(-1), _midiChannel(1), _lastFader14bit(-1)
+{
+}
+
 Fader::Fader(int pin, int midiChannel)
     : _pin(pin), _midiChannel(midiChannel), _lastFader14bit(-1)
 {
+}
+
+void Fader::setup(int pin, int midiChannel)
+{
+    _pin = pin;
+    _midiChannel = midiChannel;
+    _lastFader14bit = -1;
 }
 
 void Fader::read()

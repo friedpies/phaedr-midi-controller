@@ -27,8 +27,12 @@
 class Fader
 {
 public:
-    // midiChannel: 1-8 (fader 1 = channel 1, fader 8 = channel 8)
+    // Default constructor — sentinel state; call setup() before use
+    Fader();
+    // Full constructor — midiChannel: 1-8 (fader 1 = channel 1, fader 8 = channel 8)
     Fader(int pin, int midiChannel);
+    // setup() for two-phase init (default-construct array, then configure in init())
+    void setup(int pin, int midiChannel);
     void read();
 
     // Noise threshold: proportionally equivalent to Potentiometer's ANALOG_NOISE=3

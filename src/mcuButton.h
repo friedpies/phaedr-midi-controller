@@ -8,7 +8,12 @@
 class MCUButton
 {
 public:
+    // Default constructor — sentinel state; call setup() before use
+    MCUButton();
+    // Full constructor — initializes immediately
     MCUButton(int buttonPin, int ledPin, int noteNum, int debounceTime);
+    // setup() for two-phase init (default-construct array, then configure in init())
+    void setup(int buttonPin, int ledPin, int noteNum, int debounceTime);
     void init();
     void read();
     void setLedState(uint8_t velocity);  // 0=off, 127=on; 1=blink handled Phase 2
