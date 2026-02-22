@@ -22,8 +22,10 @@ void InputManager::handleControlChangeMessage(byte channel, byte ccNum, byte vel
     {
         if ((ccNum >= 102 && ccNum <= 117) || (ccNum >= 20 && ccNum <= 27))
         {
-            Button button = *(buttonRegistry.ccNumToButton[ccNum]);
-            button.setLedState(velocity == 127 ? HIGH : LOW);
+            Button* button = buttonRegistry.ccNumToButton[ccNum];
+            if (button != nullptr) {
+                button->setLedState(velocity == 127 ? HIGH : LOW);
+            }
         }
     }
 }
