@@ -7,8 +7,8 @@
 
 ### MCU Protocol Foundation
 
-- [ ] **MCU-01**: Firmware completes the 4-step MCU SysEx handshake with Logic Pro (Device Query → Host Connection Query → Host Connection Reply → Confirmation) within 300ms
-- [ ] **MCU-02**: Logic Pro recognizes the controller as a Mackie Control Universal surface and begins sending bidirectional MIDI feedback
+- [x] **MCU-01**: Firmware completes the 4-step MCU SysEx handshake with Logic Pro (Device Query → Host Connection Query → Host Connection Reply → Confirmation) within 300ms
+- [x] **MCU-02**: Logic Pro recognizes the controller as a Mackie Control Universal surface and begins sending bidirectional MIDI feedback
 - [ ] **MCU-03**: Channel strip buttons (REC, SOLO, MUTE, SELECT) send MCU Note Bang messages on MIDI channel 1 using note numbers 0–31
 - [ ] **MCU-04**: Transport buttons (Rewind, FF, Stop, Play, Record) send MCU Note Bang messages using note numbers 91–95
 - [ ] **MCU-05**: Sliders (faders) send 14-bit pitch bend on MIDI channels 1–8, not CC messages
@@ -108,8 +108,8 @@
 |-------------|-------|--------|
 | FIX-01 | Phase 1 | Pending |
 | FIX-02 | Phase 1 | Pending |
-| MCU-01 | Phase 1 | Pending |
-| MCU-02 | Phase 1 | Pending |
+| MCU-01 | Phase 1 | Complete |
+| MCU-02 | Phase 1 | Complete |
 | MCU-03 | Phase 1 | Pending |
 | MCU-04 | Phase 1 | Pending |
 | MCU-05 | Phase 1 | Pending |

@@ -72,7 +72,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. MCU Protocol Foundation | 1/5 | In progress | - |
+| 1. MCU Protocol Foundation | 4/5 | In Progress|  |
 | 2. LED State + Pickup Mode | 0/TBD | Not started | - |
 | 3. Grid Transport Layout | 0/TBD | Not started | - |
 | 4. Animation Manager | 0/TBD | Not started | - |

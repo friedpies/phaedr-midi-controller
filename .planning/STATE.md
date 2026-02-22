@@ -19,18 +19,18 @@ Progress: [████░░░░░░] 20%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 1.5 min
-- Total execution time: 3 min
+- Total plans completed: 3
+- Average duration: 1.3 min
+- Total execution time: 4 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-mcu-protocol-foundation | 2 | 3 min | 1.5 min |
+| 01-mcu-protocol-foundation | 3 | 4 min | 1.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 2 min, 1 min
+- Last 5 plans: 2 min, 1 min, 1 min
 - Trend: Fast
 
 *Updated after each plan completion*
@@ -51,6 +51,12 @@ From 01-01 execution:
 - No DEBUG guard system: Serial.println lines deleted outright per clean-break decision — no legacy compatibility shims
 - Null guard added to handleControlChangeMessage: defensive safety for any future CC number missing from registry
 
+From 01-04 execution:
+
+- Renamed static member SERIAL to DEVICE_SERIAL: Teensy wiring.h defines #define SERIAL 0 which causes macro collision; rename avoids it with no behavior change
+- Static challenge bytes 0x7A 0x6B 0x5C 0x4D chosen for initial implementation; randomization deferred to future improvement
+- hasTerm=true in all sendSysEx calls: message arrays include F0/F7 delimiters; library does not re-add them
+
 ### Pending Todos
 
 None.
@@ -66,5 +72,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Plan 01-01 complete — FIX-01 and FIX-02 both resolved, firmware builds clean
-Resume file: .planning/phases/01-mcu-protocol-foundation/01-01-SUMMARY.md
+Stopped at: Plan 01-04 complete — MCUProtocol SysEx handshake state machine implemented, firmware builds clean
+Resume file: .planning/phases/01-mcu-protocol-foundation/01-04-SUMMARY.md
