@@ -28,10 +28,10 @@ This milestone converts the existing CC-based Teensy 3.5 firmware into a Mackie 
 
 Plans:
 - [x] 01-01-PLAN.md — Fix copy-by-value Button bug (FIX-01) and remove Serial.println from MIDI callbacks (FIX-02)
-- [ ] 01-02-PLAN.md — Create MCUButton class (Note Bang, LED via setLedState with LED_MAX_BRIGHTNESS cap) and NoteRegistry; add LED_MAX_BRIGHTNESS to pinDefines.h (PWR-01)
-- [ ] 01-03-PLAN.md — Create Fader class (14-bit Pitch Bend per MIDI channel) and document knob CC reassignment
-- [ ] 01-04-PLAN.md — Create MCUProtocol class (4-step SysEx handshake state machine, retry timer)
-- [ ] 01-05-PLAN.md — Integration: wire MCUButton, Fader, NoteRegistry, MCUProtocol into InputManager and main.cpp; add cascade boot animation in setup() (BOOT-01)
+- [x] 01-02-PLAN.md — Create MCUButton class (Note Bang, LED via setLedState with LED_MAX_BRIGHTNESS cap) and NoteRegistry; add LED_MAX_BRIGHTNESS to pinDefines.h (PWR-01)
+- [x] 01-03-PLAN.md — Create Fader class (14-bit Pitch Bend per MIDI channel) and document knob CC reassignment
+- [x] 01-04-PLAN.md — Create MCUProtocol class (4-step SysEx handshake state machine, retry timer)
+- [x] 01-05-PLAN.md — Integration: wire MCUButton, Fader, NoteRegistry, MCUProtocol into InputManager and main.cpp; pulse wave boot animation in setup() (BOOT-01) — hardware verified
 
 ### Phase 2: LED State + Pickup Mode
 **Goal**: Faders suppress MIDI output after a bank switch until the physical position crosses the DAW value, channel button LEDs blink while a fader is out of sync, and loop/punch/metronome state LEDs reflect real Logic state

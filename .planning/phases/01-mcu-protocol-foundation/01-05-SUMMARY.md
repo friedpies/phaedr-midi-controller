@@ -17,9 +17,9 @@ requires:
 provides:
   - "InputManager rewritten: MCUButton[] for grid/track buttons, Fader[] for sliders, Potentiometer[] with CC 16-23 for knobs"
   - "handleNoteMessage() routes DAW NoteOn/Off to MCUButton::setLedState() via NoteRegistry"
-  - "main.cpp: SysEx/NoteOn/NoteOff handlers registered, CC handler removed, playStartupAnimation() BOOT-01"
+  - "main.cpp: SysEx/NoteOn/NoteOff handlers registered, CC handler removed, playStartupAnimation() BOOT-01 pulse wave animation"
   - "SoftPWM vendored locally with SOFTPWM_MAXCHANNELS=22 to support all 22 LED channels"
-  - "Full MCU protocol firmware ready for hardware verification with Logic Pro"
+  - "Full MCU protocol firmware verified with Logic Pro — surface recognized, LED feedback working, transport buttons control Logic"
 affects:
   - "Phase 2 (LED blinking) — MCUButton::setLedState() velocity=1 blink path ready"
   - "Phase 3 (grid button reassignment) — note numbers for K1-K13 are placeholder; Phase 3 reassigns"
@@ -36,6 +36,7 @@ tech-stack:
     - "BOOT-01 animation: SoftPWMBegin called in inputManager.init(), animation runs after init()"
     - "K13 LED registration: explicit SoftPWMSet(LED_K13, 0) ensures animation works even though MCUButton has ledPin=-1"
     - "Vendor local library override: lib/SoftPWM/ takes precedence over lib_deps in PlatformIO LDF"
+    - "Pulse wave animation: 5-LED window sweeps K1->P8 then reverses; SoftPWM fade-out creates comet tail"
 
 key-files:
   created:
@@ -61,6 +62,7 @@ key-decisions:
   - "MCU-04 hardware scope documented: Rewind (91) and FastForward (92) intentionally absent — no physical buttons on this controller"
   - "SOFTPWM_MAXCHANNELS increased from 20 to 22 via local lib/ vendoring — all 22 LED channels registered successfully"
   - "K13 LED explicitly registered with SoftPWM via SoftPWMSet(LED_K13, 0) despite ledPin=-1 in MCUButton — animation needs the pin registered"
+  - "Pulse wave animation chosen over cascade and slosh after user iteration — 5-LED window with comet tail sweeps twice (~4.4s)"
 
 patterns-established:
   - "Sentinel-guarded MCUButton: buttonPin=-1 skips init/read; noteNum=-1 skips MIDI; LED-equipped check via _hasLed"
@@ -70,30 +72,32 @@ patterns-established:
 requirements-completed: [MCU-01, MCU-02, MCU-03, MCU-04, MCU-05, MCU-06, LED-01, LED-02, LED-04, BOOT-01, PWR-01]
 
 # Metrics
-duration: 8min
+duration: ~8min
 completed: 2026-02-22
 ---
 
 # Phase 1 Plan 05: MCU Protocol Integration Summary
 
-**Full MCU firmware integration: InputManager rewritten with MCUButton Note Bangs, 14-bit Fader Pitch Bend on MIDI channels 1-8, CC 16-23 knobs, NoteRegistry LED routing, BOOT-01 cascade startup animation — K13 and P8 LED failures diagnosed and fixed (SoftPWM channel limit + unregistered pin) — awaiting hardware re-verification**
+**Full MCU firmware integration verified on hardware: InputManager rewritten with MCUButton Note Bangs and 14-bit Fader Pitch Bend, Logic Pro recognizes Mackie Control surface, LED feedback confirmed, pulse wave boot animation across all 24 LEDs — K13 and P8 LED failures diagnosed and fixed (SoftPWM channel limit + unregistered pin)**
 
 ## Performance
 
-- **Duration:** ~8 min
+- **Duration:** ~8 min (execution) + hardware verification iteration
 - **Started:** 2026-02-22
 - **Completed:** 2026-02-22
-- **Tasks:** 3 of 3 (Task 3 hardware checkpoint delivered for re-verification)
+- **Tasks:** 3 of 3 (hardware verification approved)
 - **Files modified:** 15
 
 ## Accomplishments
 
 - Rewrote InputManager: CC-based Button arrays replaced with MCUButton Note Bang arrays; Potentiometer sliders replaced with Fader Pitch Bend arrays; knob CC reassigned to 16-23 (MCU-06)
-- Rewrote main.cpp: SysEx/NoteOn/NoteOff handlers registered; CC handler removed; BOOT-01 cascade animation runs 24 LEDs on power-on; loop calls mcuProtocol.update() for handshake retry
+- Rewrote main.cpp: SysEx/NoteOn/NoteOff handlers registered; CC handler removed; BOOT-01 pulse wave animation runs across all 24 LEDs on power-on; loop calls mcuProtocol.update() for handshake retry
 - Added default constructors + setup() to MCUButton and Fader for clean C++ array initialization without heap allocation
 - MCU-04 transport buttons correctly assigned: K14=Record(95), K15=Stop(93), K16=Play(94); no phantom Rewind/FF assignments
 - Diagnosed K13 LED failure: SoftPWM pin never registered (ledPin=-1 skips MCUButton::init() registration). Fixed with explicit SoftPWMSet(LED_K13, 0) in inputManager.cpp init()
 - Diagnosed P8 LED failure: SOFTPWM_MAXCHANNELS=20 exceeded (22 channels required). Fixed by vendoring SoftPWM locally in lib/SoftPWM/ with limit raised to 22
+- Hardware verified: Logic Pro shows Mackie Control as active surface; channel strip button LEDs respond to Logic Note On feedback; transport buttons control Logic playback; sliders send Pitch Bend (not CC)
+- Iterated startup animation from cascade (one-shot) to slosh (fill/drain) to final pulse wave (5-LED comet sweeps back and forth twice, ~4.4s)
 
 ## Task Commits
 
@@ -102,12 +106,16 @@ Each task committed atomically:
 1. **Task 1: Rewrite InputManager** - `5c71a55` (feat)
 2. **Task 2: Rewrite main.cpp** - `a61ede5` (feat)
 3. **Task 3 continuation: LED fix (K13 + P8)** - `3332e1a` (fix)
+4. **Animation iteration: slosh startup animation** - `d5a6d30` (feat — superseded)
+5. **Animation iteration: final pulse wave animation** - `294b93b` (feat)
+
+**Plan metadata:** `2e31181` (docs: plan 05 completion with LED fixes), `bb36f4b` (earlier docs: plan metadata)
 
 ## Files Created/Modified
 
 - `src/inputManager.h` - MCUButton[], Fader[], NoteRegistry, handleNoteMessage(); removed Button[], ButtonRegistry
 - `src/inputManager.cpp` - Full init() with setup() calls, NoteRegistry registration, explicit LED_K13 SoftPWM registration, readAll() with faders
-- `src/main.cpp` - SysEx/NoteOn/NoteOff handlers, BOOT-01 animation, mcuProtocol.begin()/update()
+- `src/main.cpp` - SysEx/NoteOn/NoteOff handlers, BOOT-01 pulse wave animation, mcuProtocol.begin()/update()
 - `src/mcuButton.h` - Added default constructor + setup() declaration
 - `src/mcuButton.cpp` - Default constructor, setup(), sentinel guards in init() and read()
 - `src/fader.h` - Added default constructor + setup() declaration
@@ -124,6 +132,7 @@ Each task committed atomically:
 - **K13 noteNum=-1 sentinel:** K13 (Shift) has valid hardware but no MCU note in Phase 1. Setting noteNum=-1 prevents accidental note 0 output (which is Ch1 REC in MCU protocol). MCUButton::read() guards on `_noteNum < 0`.
 - **SoftPWMBegin() location:** Kept in inputManager.init() (not duplicated in main.cpp setup()). playStartupAnimation() called after init() ensures SoftPWM is initialized first.
 - **SOFTPWM_MAXCHANNELS=22:** Upstream limit of 20 is insufficient for this controller's 22 LED channels. Vendored locally rather than patching the cache to ensure the fix is durable across PlatformIO updates.
+- **Pulse wave animation:** After two iterations (cascade, slosh), the user chose the 5-LED window pulse that sweeps K1 to P8 and back twice (~4.4s). SoftPWM fade-out on the trailing edge creates a comet tail effect.
 
 ## Deviations from Plan
 
@@ -158,10 +167,36 @@ Each task committed atomically:
 - **Files modified:** lib/SoftPWM/SoftPWM.h, lib/SoftPWM/SoftPWM.cpp, lib/SoftPWM/SoftPWM_timer.h, lib/SoftPWM/library.json, platformio.ini
 - **Committed in:** 3332e1a (fix)
 
+### Animation Iteration (user-driven, post-fix)
+
+After all 24 LEDs were verified working, the user iterated on the startup animation style:
+
+- **d5a6d30** — Slosh animation: fill K1→P8 then drain P8→K1, two cycles (~4s). Intermediate version, superseded.
+- **294b93b** — Final pulse wave: a 5-LED window sweeps K1→P8 then reverses, twice (~4.4s). SoftPWM fade-out on trailing edge creates a comet tail. This is the shipped version.
+
+These were user-directed style iterations, not bug fixes or plan deviations.
+
 ---
 
 **Total deviations:** 4 auto-fixed (all Rule 1 bugs)
-**Impact on plan:** All fixes required for correct behavior. No scope creep.
+**Impact on plan:** All fixes required for correct behavior. No scope creep. Animation iteration was user-directed aesthetic preference.
+
+## Issues Encountered
+
+None beyond the LED failures documented as auto-fixed deviations above.
+
+## User Setup Required
+
+None - no external service configuration required.
+
+## Next Phase Readiness
+
+- Phase 1 fully verified: Logic Pro recognizes the Mackie Control surface; LED feedback, transport buttons, and faders all confirmed working on hardware
+- Phase 2 can begin: MCUButton::setLedState() velocity=1 blink path is in place and ready for the pickup mode FSM
+- Phase 3 note number grid: K1-K12 use placeholder MUTE/SELECT notes; Phase 3 will reassign cursor, bank, loop, metronome, and shift layer
+- Phase 4 animation: playStartupAnimation() is in main.cpp; Phase 4 will add handleStart/handleClock/handleStop for beat chaser
+
+---
 
 ## Self-Check: PASSED
 
@@ -175,7 +210,10 @@ Each task committed atomically:
 - FOUND: commit 5c71a55 (Task 1 — InputManager rewrite)
 - FOUND: commit a61ede5 (Task 2 — main.cpp rewrite)
 - FOUND: commit 3332e1a (fix — K13 + P8 LED failures)
+- FOUND: commit d5a6d30 (feat — slosh animation, superseded)
+- FOUND: commit 294b93b (feat — final pulse wave animation)
 - Build: SUCCESS (RAM 2.9%, Flash 3.5%) with SoftPWM 1.0.1-local
+- Hardware verification: APPROVED by user
 
 ---
 *Phase: 01-mcu-protocol-foundation*

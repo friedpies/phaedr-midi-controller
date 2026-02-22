@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A controller that feels alive — LEDs accurately reflect DAW state, a beat chaser pulses with the music, and every interaction has immediate, satisfying visual feedback.
-**Current focus:** Phase 1 — MCU Protocol Foundation
+**Current focus:** Phase 2 — LED State + Pickup Mode (Phase 1 complete)
 
 ## Current Position
 
-Phase: 1 of 4 (MCU Protocol Foundation)
-Plan: 5 of 5 in current phase (ALL tasks complete; awaiting hardware re-verification after LED fixes)
-Status: Checkpoint — awaiting hardware re-verification (K13 + P8 LED failures fixed; upload and re-test)
-Last activity: 2026-02-22 — LED failures diagnosed and fixed; firmware builds clean; ready for re-upload
+Phase: 1 of 4 (MCU Protocol Foundation) — COMPLETE
+Plan: 5 of 5 in current phase — ALL COMPLETE
+Status: Phase 1 complete — hardware verification approved; all 5 plans executed and summarized; ready for Phase 2
+Last activity: 2026-02-22 — Hardware verification approved: Logic Pro recognizes Mackie Control surface, LED feedback confirmed, pulse wave animation running across all 24 LEDs
 
 Progress: [████████░░] 40%
 
@@ -74,6 +74,8 @@ From 01-04 execution:
 - [Phase 01]: K13 (Shift) assigned noteNum=-1 sentinel; MCUButton::read() guards on noteNum<0 to prevent accidental note 0 (Ch1 REC) output
 - [Phase 01]: K15/K16 (Stop/Play) use ledPin=-1 and excluded from NoteRegistry — no LED hardware; K14 (Record, note 95) registered with NoteRegistry
 - [Phase 01-mcu-protocol-foundation]: SOFTPWM_MAXCHANNELS increased from 20 to 22 via local lib/SoftPWM/ vendoring — required to support all 22 LED channels (K1-K14 + P1-P8); K13 LED explicitly registered with SoftPWMSet despite ledPin=-1 in MCUButton
+- [Phase 01-mcu-protocol-foundation — VERIFIED]: MCU SysEx handshake works with Logic Pro — surface recognized as Mackie Control; LED feedback confirmed on channel strip buttons; transport buttons control Logic playback; sliders send Pitch Bend on per-channel MIDI channels
+- [Phase 01-mcu-protocol-foundation]: Pulse wave animation chosen: 5-LED window sweeps K1→P8 then reverses, twice (~4.4s); comet tail via SoftPWM fade-out on trailing LEDs; preferred over cascade and fill/drain slosh after iteration
 
 ### Pending Todos
 
@@ -81,7 +83,7 @@ None.
 
 ### Blockers/Concerns
 
-- **Phase 1 gate (MEDIUM confidence):** MCU SysEx handshake byte sequence is documented from community sources, not official Mackie spec. Must verify against actual Logic Pro behavior with a MIDI monitor before proceeding past Phase 1.
+- **RESOLVED — Phase 1 gate:** MCU SysEx handshake confirmed working with Logic Pro (hardware verified 2026-02-22). Surface recognized as Mackie Control; LED feedback and transport confirmed. Community-sourced SysEx byte sequence is correct.
 - **Phase 3 note numbers (LOW confidence):** Mode button note assignments in the 69–75 range (CYCLE, CLICK, etc.) use approximate values in some sources. Must capture what Logic actually sends via MIDI monitor before wiring to physical buttons.
 - **RESOLVED — FIX-01:** Copy-by-value Button bug in `src/inputManager.cpp` fixed in plan 01-01 (commit e429788).
 - **RESOLVED — FIX-02:** Serial.println calls in usbMIDI callbacks removed in plan 01-01 (commit 35d03cb).
@@ -90,5 +92,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Plan 01-05 checkpoint (Task 3 re-verification) — K13 and P8 LED failures diagnosed (SoftPWM channel overflow + unregistered pin); both fixed; firmware builds clean; awaiting user to re-upload and re-verify all 24 LEDs in startup animation
-Resume file: .planning/phases/01-mcu-protocol-foundation/01-05-SUMMARY.md
+Stopped at: Plan 01-05 complete — hardware verification approved; pulse wave animation (5-LED comet sweep, ~4.4s) selected after iteration; Phase 1 fully done
+Resume file: Begin Phase 2 (LED State + Pickup Mode)
