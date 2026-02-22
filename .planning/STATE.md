@@ -51,6 +51,12 @@ From 01-01 execution:
 - No DEBUG guard system: Serial.println lines deleted outright per clean-break decision — no legacy compatibility shims
 - Null guard added to handleControlChangeMessage: defensive safety for any future CC number missing from registry
 
+From 01-03 execution:
+
+- Fader uses 14-bit Pitch Bend (not CC) on per-fader MIDI channels 1–8 per MCU protocol; sendPitchBend offset of -8192 required for Teensyduino API compatibility
+- Noise threshold of 48 on 14-bit range is proportionally equivalent to Potentiometer's ANALOG_NOISE=3 on 10-bit range
+- MCU-06 knob CC reassignment (CC 14-15, 28-31, 118-119 → CC 16-23) deferred to Plan 05 InputManager; Potentiometer class itself is correct as-is
+
 From 01-04 execution:
 
 - Renamed static member SERIAL to DEVICE_SERIAL: Teensy wiring.h defines #define SERIAL 0 which causes macro collision; rename avoids it with no behavior change
@@ -72,5 +78,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Plan 01-04 complete — MCUProtocol SysEx handshake state machine implemented, firmware builds clean
-Resume file: .planning/phases/01-mcu-protocol-foundation/01-04-SUMMARY.md
+Stopped at: Plan 01-03 complete — Fader class with 14-bit Pitch Bend implemented; Plans 01-01, 01-02, 01-03, 01-04 all complete
+Resume file: .planning/phases/01-mcu-protocol-foundation/01-03-SUMMARY.md
