@@ -26,18 +26,15 @@ InputManager inputManager = InputManager();
 // }
 void handleControlChangeMessage(byte channel, byte ccNum, byte velocity)
 {
-    Serial.println("CONTROL CHANGE");
     inputManager.handleControlChangeMessage(channel, ccNum, velocity);
 }
 
 void handleStart()
 {
-    Serial.println("HANDLE START");
 }
 
 void handleClock()
 {
-    Serial.println("HANDLE CLOCK");
 }
 
 void handleStop()
