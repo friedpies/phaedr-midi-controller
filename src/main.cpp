@@ -6,34 +6,34 @@
 
 InputManager inputManager;
 
-// BOOT-01: Cascade startup animation — lights all 24 LEDs in sequence then turns them off.
+// BOOT-01: Slosh startup animation — wave fills K1→K16→P1→P8, drains back, repeats twice.
 // Runs blocking in setup() BEFORE usbMIDI handlers are registered. Safe because no MIDI
 // callbacks are active yet. Confirms all LED hardware works on every power-on.
-// LED order: K1–K16 (grid, row by row), then P1–P8 (track buttons).
 static void playStartupAnimation()
 {
-    const int gridLeds[]  = { LED_K1, LED_K2, LED_K3, LED_K4, LED_K5, LED_K6, LED_K7, LED_K8,
-                               LED_K9, LED_K10, LED_K11, LED_K12, LED_K13, LED_K14, LED_K15, LED_K16 };
-    const int trackLeds[] = { LED_P1, LED_P2, LED_P3, LED_P4, LED_P5, LED_P6, LED_P7, LED_P8 };
+    const int allLeds[] = {
+        LED_K1, LED_K2, LED_K3, LED_K4, LED_K5, LED_K6, LED_K7, LED_K8,
+        LED_K9, LED_K10, LED_K11, LED_K12, LED_K13, LED_K14, LED_K15, LED_K16,
+        LED_P1, LED_P2, LED_P3, LED_P4, LED_P5, LED_P6, LED_P7, LED_P8
+    };
+    const int N = 24;
+    const int STEP_MS = 35;  // 35ms per LED step
 
-    // Light each grid LED in sequence
-    for (int i = 0; i < 16; i++) {
-        SoftPWMSet(gridLeds[i], LED_MAX_BRIGHTNESS);
-        delay(40);
+    // 2 full sloshes: fill forward → drain backward → fill forward → drain backward
+    for (int slosh = 0; slosh < 2; slosh++) {
+        for (int i = 0; i < N; i++) {
+            SoftPWMSet(allLeds[i], LED_MAX_BRIGHTNESS);
+            delay(STEP_MS);
+        }
+        delay(200);  // hold with all LEDs lit
+        for (int i = N - 1; i >= 0; i--) {
+            SoftPWMSet(allLeds[i], 0);
+            delay(STEP_MS);
+        }
+        delay(200);  // hold empty (allow SoftPWM fade to settle)
     }
-    // Then each track LED
-    for (int i = 0; i < 8; i++) {
-        SoftPWMSet(trackLeds[i], LED_MAX_BRIGHTNESS);
-        delay(40);
-    }
-    // Hold briefly so user sees all LEDs lit
-    delay(150);
-    // Fade all off
-    for (int i = 0; i < 16; i++) SoftPWMSet(gridLeds[i], 0);
-    for (int i = 0; i < 8; i++)  SoftPWMSet(trackLeds[i], 0);
-    delay(300);  // allow SoftPWM fade to complete
 }
-// Total animation duration: 24 x 40ms + 150 + 300 = ~1.4 seconds
+// Total duration: 2 × (24×35ms fill + 200ms hold + 24×35ms drain + 200ms hold) ≈ 4.2 seconds
 
 // SysEx handler — forwards to MCUProtocol state machine
 void handleSysEx(const uint8_t* data, uint16_t length, bool complete)
