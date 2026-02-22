@@ -76,4 +76,8 @@
 #define LED_P8 51
 
 
+// USB power budget: 24 LEDs × ~20mA peak × (LED_MAX_BRIGHTNESS/255) duty + ~150mA Teensy <= 500mA
+// 180/255 = 70.6% duty → ~14.1mA avg per LED → 24 × 14.1 + 150 = ~489mA max
+#define LED_MAX_BRIGHTNESS 180
+
 #endif
