@@ -6,9 +6,9 @@
 
 InputManager inputManager;
 
-// BOOT-01: Slosh startup animation — wave fills K1→K16→P1→P8, drains back, repeats twice.
-// Runs blocking in setup() BEFORE usbMIDI handlers are registered. Safe because no MIDI
-// callbacks are active yet. Confirms all LED hardware works on every power-on.
+// BOOT-01: Pulse startup animation — a window of ~5 LEDs sweeps back and forth like a wave.
+// SoftPWM fade-out on the trailing edge creates a natural comet tail behind the pulse.
+// Runs blocking in setup() BEFORE usbMIDI handlers are registered.
 static void playStartupAnimation()
 {
     const int allLeds[] = {
@@ -16,24 +16,35 @@ static void playStartupAnimation()
         LED_K9, LED_K10, LED_K11, LED_K12, LED_K13, LED_K14, LED_K15, LED_K16,
         LED_P1, LED_P2, LED_P3, LED_P4, LED_P5, LED_P6, LED_P7, LED_P8
     };
-    const int N = 24;
-    const int STEP_MS = 35;  // 35ms per LED step
+    const int N      = 24;
+    const int STEP   = 35;  // ms per LED position
+    const int WINDOW = 5;   // pulse width — trailing edge fades via SoftPWM
 
-    // 2 full sloshes: fill forward → drain backward → fill forward → drain backward
-    for (int slosh = 0; slosh < 2; slosh++) {
+    // 2 full back-and-forth sweeps (~4 seconds total)
+    for (int sweep = 0; sweep < 2; sweep++) {
+        // Forward: pulse travels K1 → P8
         for (int i = 0; i < N; i++) {
             SoftPWMSet(allLeds[i], LED_MAX_BRIGHTNESS);
-            delay(STEP_MS);
+            if (i >= WINDOW) SoftPWMSet(allLeds[i - WINDOW], 0);
+            delay(STEP);
         }
-        delay(200);  // hold with all LEDs lit
+        // Fade out trailing window, pause before reversing
+        for (int i = N - WINDOW; i < N; i++) SoftPWMSet(allLeds[i], 0);
+        delay(150);
+
+        // Backward: pulse travels P8 → K1
         for (int i = N - 1; i >= 0; i--) {
-            SoftPWMSet(allLeds[i], 0);
-            delay(STEP_MS);
+            SoftPWMSet(allLeds[i], LED_MAX_BRIGHTNESS);
+            if (i + WINDOW < N) SoftPWMSet(allLeds[i + WINDOW], 0);
+            delay(STEP);
         }
-        delay(200);  // hold empty (allow SoftPWM fade to settle)
+        // Fade out trailing window, pause before next sweep (or ending)
+        for (int i = WINDOW - 1; i >= 0; i--) SoftPWMSet(allLeds[i], 0);
+        delay(150);
     }
+    delay(200);  // final settle
 }
-// Total duration: 2 × (24×35ms fill + 200ms hold + 24×35ms drain + 200ms hold) ≈ 4.2 seconds
+// Total: 2 × (24×35ms fwd + 150 + 24×35ms back + 150) + 200 ≈ 4.4 seconds
 
 // SysEx handler — forwards to MCUProtocol state machine
 void handleSysEx(const uint8_t* data, uint16_t length, bool complete)
