@@ -26,12 +26,16 @@ public:
     NoteRegistry noteRegistry;
 
 private:
+    // 2D ripple state — per-LED distances computed at trigger time, checked each update
     struct RippleState {
-        bool     active   = false;
-        int      origin   = 0;    // LED index (0-23) that was pressed
-        uint32_t startMs  = 0;
-        int      lastStep = -1;
+        bool     active    = false;
+        uint32_t startMs   = 0;
+        float    dist[24];   // Euclidean distance from pressed LED for each of the 24 LEDs
+        bool     lit[24];    // has this LED been turned on yet?
+        bool     faded[24];  // has this LED been faded out yet?
     } _ripple;
+
+    void triggerRipple(int originIdx);  // compute distances, reset state, clear LEDs
 
     // MCUButton arrays — default-constructed here, configured in init() via setup()
     MCUButton gridButtons[NUM_GRID_BUTTONS];   // K1–K16
