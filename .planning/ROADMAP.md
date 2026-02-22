@@ -23,7 +23,14 @@ This milestone converts the existing CC-based Teensy 3.5 firmware into a Mackie 
   3. Moving any of the 8 sliders causes Logic's on-screen fader to move; a MIDI monitor confirms the message is Pitch Bend (not CC) on the per-fader MIDI channel
   4. Pressing Play, Stop, or Record on the hardware triggers the corresponding transport action in Logic; Logic's response Note On lights the appropriate LED
   5. Plugging in the controller and opening a MIDI monitor shows no debug "CONTROL CHANGE" Serial output interfering with timing
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Fix copy-by-value Button bug (FIX-01) and remove Serial.println from MIDI callbacks (FIX-02)
+- [ ] 01-02-PLAN.md — Create MCUButton class (Note Bang, LED via setLedState) and NoteRegistry (note-to-MCUButton* map)
+- [ ] 01-03-PLAN.md — Create Fader class (14-bit Pitch Bend per MIDI channel) and document knob CC reassignment
+- [ ] 01-04-PLAN.md — Create MCUProtocol class (4-step SysEx handshake state machine, retry timer)
+- [ ] 01-05-PLAN.md — Integration: wire MCUButton, Fader, NoteRegistry, MCUProtocol into InputManager and main.cpp
 
 ### Phase 2: LED State + Pickup Mode
 **Goal**: Faders suppress MIDI output after a bank switch until the physical position crosses the DAW value, channel button LEDs blink while a fader is out of sync, and loop/punch/metronome state LEDs reflect real Logic state
@@ -64,10 +71,11 @@ This milestone converts the existing CC-based Teensy 3.5 firmware into a Mackie 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. MCU Protocol Foundation | 0/TBD | Not started | - |
+| 1. MCU Protocol Foundation | 0/5 | Not started | - |
 | 2. LED State + Pickup Mode | 0/TBD | Not started | - |
 | 3. Grid Transport Layout | 0/TBD | Not started | - |
 | 4. Animation Manager | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-02-21*
+*Phase 1 planned: 2026-02-21*
