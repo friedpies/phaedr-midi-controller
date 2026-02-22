@@ -82,7 +82,12 @@ void setup()
 
 void loop()
 {
-    inputManager.readAll();
+    if (mcuProtocol.isHandshakeComplete()) {
+        inputManager.readAll();
+    } else {
+        inputManager.readIdle();    // pre-handshake: detect presses for ripple, no MIDI output
+        inputManager.updateRipple();
+    }
     mcuProtocol.update();  // handles handshake retry timer
     usbMIDI.read();
 }

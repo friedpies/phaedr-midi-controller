@@ -48,6 +48,13 @@ void MCUButton::read()
     }
 }
 
+bool MCUButton::poll()
+{
+    if (_buttonPin < 0) return false;
+    _bounce.update();
+    return _bounce.fell();
+}
+
 void MCUButton::setLedState(uint8_t velocity)
 {
     if (!_hasLed) return;

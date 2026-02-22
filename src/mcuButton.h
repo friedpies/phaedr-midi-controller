@@ -16,6 +16,7 @@ public:
     void setup(int buttonPin, int ledPin, int noteNum, int debounceTime);
     void init();
     void read();
+    bool poll();                         // debounce update only — returns true on press, no MIDI output
     void setLedState(uint8_t velocity);  // 0=off, 127=on; 1=blink handled Phase 2
     int getLedPin() const;
     int getNoteNum() const;

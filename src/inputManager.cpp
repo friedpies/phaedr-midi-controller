@@ -107,6 +107,67 @@ void InputManager::init()
     noteRegistry.registerButton(7, &trackButtons[7]);
 }
 
+// LED positions matching the boot animation order: K1–K16 then P1–P8
+static const int RIPPLE_LEDS[] = {
+    LED_K1, LED_K2, LED_K3, LED_K4, LED_K5, LED_K6, LED_K7, LED_K8,
+    LED_K9, LED_K10, LED_K11, LED_K12, LED_K13, LED_K14, LED_K15, LED_K16,
+    LED_P1, LED_P2, LED_P3, LED_P4, LED_P5, LED_P6, LED_P7, LED_P8
+};
+static const int RIPPLE_N       = 24;
+static const int RIPPLE_STEP_MS = 40;  // ms between each LED position advancing
+static const int RIPPLE_WINDOW  = 5;   // how many positions stay lit before the tail fades
+
+void InputManager::readIdle()
+{
+    // Poll grid buttons — LED indices 0-15
+    for (int i = 0; i < NUM_GRID_BUTTONS; i++) {
+        if (gridButtons[i].poll()) {
+            for (int j = 0; j < RIPPLE_N; j++) SoftPWMSet(RIPPLE_LEDS[j], 0);
+            _ripple.active   = true;
+            _ripple.origin   = i;
+            _ripple.startMs  = millis();
+            _ripple.lastStep = -1;
+        }
+    }
+    // Poll track buttons — LED indices 16-23
+    for (int i = 0; i < NUM_TRACKS; i++) {
+        if (trackButtons[i].poll()) {
+            for (int j = 0; j < RIPPLE_N; j++) SoftPWMSet(RIPPLE_LEDS[j], 0);
+            _ripple.active   = true;
+            _ripple.origin   = NUM_GRID_BUTTONS + i;
+            _ripple.startMs  = millis();
+            _ripple.lastStep = -1;
+        }
+    }
+}
+
+void InputManager::updateRipple()
+{
+    if (!_ripple.active) return;
+
+    int step = (int)((millis() - _ripple.startMs) / RIPPLE_STEP_MS);
+    if (step == _ripple.lastStep) return;  // nothing new this loop
+    _ripple.lastStep = step;
+
+    // Light wavefront: LEDs at exactly `step` positions from origin, spreading both ways
+    int ahead  = _ripple.origin + step;
+    int behind = _ripple.origin - step;
+    if (ahead < RIPPLE_N)                    SoftPWMSet(RIPPLE_LEDS[ahead],  LED_MAX_BRIGHTNESS);
+    if (behind >= 0 && behind != ahead)      SoftPWMSet(RIPPLE_LEDS[behind], LED_MAX_BRIGHTNESS);
+
+    // Fade tail: LEDs WINDOW positions behind the wavefront (SoftPWM fade handles the glow-off)
+    int fadeAhead  = ahead  - RIPPLE_WINDOW;
+    int fadeBehind = behind + RIPPLE_WINDOW;
+    if (fadeAhead >= 0 && fadeAhead < RIPPLE_N)                          SoftPWMSet(RIPPLE_LEDS[fadeAhead],  0);
+    if (fadeBehind >= 0 && fadeBehind < RIPPLE_N && fadeBehind != fadeAhead) SoftPWMSet(RIPPLE_LEDS[fadeBehind], 0);
+
+    // Done when wavefront has cleared all 24 positions and tail has fully faded
+    int maxDist = max(_ripple.origin, RIPPLE_N - 1 - _ripple.origin);
+    if (step > maxDist + RIPPLE_WINDOW) {
+        _ripple.active = false;
+    }
+}
+
 void InputManager::handleNoteMessage(byte note, uint8_t velocity)
 {
     MCUButton* btn = noteRegistry.getButton(note);

@@ -15,6 +15,8 @@ class InputManager
 public:
     void init();
     void readAll();
+    void readIdle();      // idle mode: debounce buttons, trigger ripple on press — no MIDI output
+    void updateRipple();  // advance ripple animation one step (non-blocking, millis-based)
     void handleNoteMessage(byte note, uint8_t velocity);
 
     static const int NUM_GRID_BUTTONS = 16;
@@ -22,6 +24,14 @@ public:
     static const int DEBOUNCE_TIME = 20;
 
     NoteRegistry noteRegistry;
+
+private:
+    struct RippleState {
+        bool     active   = false;
+        int      origin   = 0;    // LED index (0-23) that was pressed
+        uint32_t startMs  = 0;
+        int      lastStep = -1;
+    } _ripple;
 
     // MCUButton arrays — default-constructed here, configured in init() via setup()
     MCUButton gridButtons[NUM_GRID_BUTTONS];   // K1–K16
