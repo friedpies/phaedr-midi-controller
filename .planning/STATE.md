@@ -51,6 +51,13 @@ From 01-01 execution:
 - No DEBUG guard system: Serial.println lines deleted outright per clean-break decision — no legacy compatibility shims
 - Null guard added to handleControlChangeMessage: defensive safety for any future CC number missing from registry
 
+From 01-02 execution:
+
+- MCUButton is a standalone class (not Button subclass) — structural enforcement of no-LED-self-toggle invariant
+- LED_MAX_BRIGHTNESS 180 placed in pinDefines.h (global scope) so constant is available across all LED-touching code
+- _hasLed = (ledPin >= 0) pattern: ledPin value conveys both pin number and LED presence, reducing constructor surface
+- NoteRegistry separate from ButtonRegistry — CC-based and note-based registries coexist during transition
+
 From 01-03 execution:
 
 - Fader uses 14-bit Pitch Bend (not CC) on per-fader MIDI channels 1–8 per MCU protocol; sendPitchBend offset of -8192 required for Teensyduino API compatibility

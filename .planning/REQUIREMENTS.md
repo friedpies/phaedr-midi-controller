@@ -9,17 +9,17 @@
 
 - [x] **MCU-01**: Firmware completes the 4-step MCU SysEx handshake with Logic Pro (Device Query → Host Connection Query → Host Connection Reply → Confirmation) within 300ms
 - [x] **MCU-02**: Logic Pro recognizes the controller as a Mackie Control Universal surface and begins sending bidirectional MIDI feedback
-- [ ] **MCU-03**: Channel strip buttons (REC, SOLO, MUTE, SELECT) send MCU Note Bang messages on MIDI channel 1 using note numbers 0–31
-- [ ] **MCU-04**: Transport buttons (Rewind, FF, Stop, Play, Record) send MCU Note Bang messages using note numbers 91–95
+- [x] **MCU-03**: Channel strip buttons (REC, SOLO, MUTE, SELECT) send MCU Note Bang messages on MIDI channel 1 using note numbers 0–31
+- [x] **MCU-04**: Transport buttons (Rewind, FF, Stop, Play, Record) send MCU Note Bang messages using note numbers 91–95
 - [x] **MCU-05**: Sliders (faders) send 14-bit pitch bend on MIDI channels 1–8, not CC messages
 - [x] **MCU-06**: Knobs send CC 16–23 (VPot encoder messages) per MCU protocol
 
 ### LED State Feedback
 
-- [ ] **LED-01**: Channel strip REC/SOLO/MUTE/SELECT LEDs update in response to Note On/Off messages from Logic (velocity 127 = on, 1 = blink, 0 = off)
-- [ ] **LED-02**: Transport state LEDs (Play, Record) reflect real Logic Pro state via incoming Note On/Off
+- [x] **LED-01**: Channel strip REC/SOLO/MUTE/SELECT LEDs update in response to Note On/Off messages from Logic (velocity 127 = on, 1 = blink, 0 = off)
+- [x] **LED-02**: Transport state LEDs (Play, Record) reflect real Logic Pro state via incoming Note On/Off
 - [ ] **LED-03**: Loop active, punch in/out, and metronome toggle states reflected in grid button LEDs
-- [ ] **LED-04**: ButtonRegistry extended with Note-to-Button lookup alongside existing CC-to-Button map
+- [x] **LED-04**: ButtonRegistry extended with Note-to-Button lookup alongside existing CC-to-Button map
 
 ### Pickup Mode
 
@@ -66,7 +66,7 @@
 
 ### Power & Boot
 
-- [ ] **PWR-01**: A compile-time constant `LED_MAX_BRIGHTNESS` (default 180, range 0–255) in `src/pinDefines.h` caps the SoftPWM value used for all "LED on" states; `MCUButton::setLedState(127)` sets brightness to `LED_MAX_BRIGHTNESS` (not 255), ensuring the 24-LED array stays within USB 500mA power budget (Teensy ~150mA + 24 LEDs at ≤14mA avg = ~490mA max)
+- [x] **PWR-01**: A compile-time constant `LED_MAX_BRIGHTNESS` (default 180, range 0–255) in `src/pinDefines.h` caps the SoftPWM value used for all "LED on" states; `MCUButton::setLedState(127)` sets brightness to `LED_MAX_BRIGHTNESS` (not 255), ensuring the 24-LED array stays within USB 500mA power budget (Teensy ~150mA + 24 LEDs at ≤14mA avg = ~490mA max)
 - [ ] **BOOT-01**: On power-on, a cascade startup animation lights each LED in sequence (K1→K16 grid row by row, then P1→P8 track buttons) and turns all off before MIDI callback registration; animation is a blocking call in `setup()` before `usbMIDI` handlers are registered, completing within 2 seconds
 
 ### Codebase Cleanup (Prerequisites)
@@ -110,15 +110,15 @@
 | FIX-02 | Phase 1 | Pending |
 | MCU-01 | Phase 1 | Complete |
 | MCU-02 | Phase 1 | Complete |
-| MCU-03 | Phase 1 | Pending |
-| MCU-04 | Phase 1 | Pending |
+| MCU-03 | Phase 1 | Complete |
+| MCU-04 | Phase 1 | Complete |
 | MCU-05 | Phase 1 | Complete |
 | MCU-06 | Phase 1 | Complete |
-| LED-01 | Phase 1 | Pending |
-| LED-02 | Phase 1 | Pending |
+| LED-01 | Phase 1 | Complete |
+| LED-02 | Phase 1 | Complete |
 | LED-03 | Phase 2 | Pending |
-| LED-04 | Phase 1 | Pending |
-| PWR-01 | Phase 1 | Pending |
+| LED-04 | Phase 1 | Complete |
+| PWR-01 | Phase 1 | Complete |
 | BOOT-01 | Phase 1 | Pending |
 | PICK-01 | Phase 2 | Pending |
 | PICK-02 | Phase 2 | Pending |
