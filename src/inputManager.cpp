@@ -128,7 +128,7 @@ static const float LED_POS_Y[24] = {
 static const int   RIPPLE_N       = 24;
 static const float RIPPLE_SPEED    = 90.0f;  // ms per grid-cell of distance
 static const int   RIPPLE_HOLD_MS  = 260;    // how long each LED stays bright before fading
-static const float RIPPLE_MAX_DIST = 14.0f;  // distance at which brightness reaches zero
+static const float RIPPLE_DECAY    = 0.35f;  // exponential decay rate — higher = steeper drop-off
 
 static const int RIPPLE_LEDS[24] = {
     LED_K1, LED_K2, LED_K3, LED_K4, LED_K5, LED_K6, LED_K7, LED_K8,
@@ -146,10 +146,8 @@ void InputManager::triggerRipple(int originIdx)
         float dx = LED_POS_X[i] - ox;
         float dy = LED_POS_Y[i] - oy;
         float d = sqrtf(dx * dx + dy * dy);
-        _ripple.dist[i]  = d;
-        float dampen = 1.0f - (d / RIPPLE_MAX_DIST);
-        if (dampen < 0.0f) dampen = 0.0f;
-        _ripple.brightness[i] = (uint8_t)(LED_MAX_BRIGHTNESS * dampen);
+        _ripple.dist[i]       = d;
+        _ripple.brightness[i] = (uint8_t)(LED_MAX_BRIGHTNESS * expf(-d * RIPPLE_DECAY));
         _ripple.lit[i]   = false;
         _ripple.faded[i] = false;
     }
