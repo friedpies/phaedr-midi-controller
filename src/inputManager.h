@@ -30,9 +30,10 @@ private:
     struct RippleState {
         bool     active    = false;
         uint32_t startMs   = 0;
-        float    dist[24];   // Euclidean distance from pressed LED for each of the 24 LEDs
-        bool     lit[24];    // has this LED been turned on yet?
-        bool     faded[24];  // has this LED been faded out yet?
+        float    dist[24];       // Euclidean distance from pressed LED for each of the 24 LEDs
+        uint8_t  brightness[24]; // pre-computed dampened brightness (full at origin, falls off with dist)
+        bool     lit[24];        // has this LED been turned on yet?
+        bool     faded[24];      // has this LED been faded out yet?
     } _ripple;
 
     void triggerRipple(int originIdx);  // compute distances, reset state, clear LEDs

@@ -126,8 +126,9 @@ static const float LED_POS_Y[24] = {
 };
 
 static const int   RIPPLE_N       = 24;
-static const float RIPPLE_SPEED   = 90.0f;  // ms per grid-cell of distance
-static const int   RIPPLE_HOLD_MS = 260;    // how long each LED stays bright before fading
+static const float RIPPLE_SPEED    = 90.0f;  // ms per grid-cell of distance
+static const int   RIPPLE_HOLD_MS  = 260;    // how long each LED stays bright before fading
+static const float RIPPLE_MAX_DIST = 14.0f;  // distance at which brightness reaches zero
 
 static const int RIPPLE_LEDS[24] = {
     LED_K1, LED_K2, LED_K3, LED_K4, LED_K5, LED_K6, LED_K7, LED_K8,
@@ -144,7 +145,11 @@ void InputManager::triggerRipple(int originIdx)
     for (int i = 0; i < RIPPLE_N; i++) {
         float dx = LED_POS_X[i] - ox;
         float dy = LED_POS_Y[i] - oy;
-        _ripple.dist[i]  = sqrtf(dx * dx + dy * dy);
+        float d = sqrtf(dx * dx + dy * dy);
+        _ripple.dist[i]  = d;
+        float dampen = 1.0f - (d / RIPPLE_MAX_DIST);
+        if (dampen < 0.0f) dampen = 0.0f;
+        _ripple.brightness[i] = (uint8_t)(LED_MAX_BRIGHTNESS * dampen);
         _ripple.lit[i]   = false;
         _ripple.faded[i] = false;
     }
@@ -177,7 +182,7 @@ void InputManager::updateRipple()
         uint32_t fadeAt  = lightAt + (uint32_t)RIPPLE_HOLD_MS;
 
         if (!_ripple.lit[i] && elapsed >= lightAt) {
-            SoftPWMSet(RIPPLE_LEDS[i], LED_MAX_BRIGHTNESS);
+            SoftPWMSet(RIPPLE_LEDS[i], _ripple.brightness[i]);
             _ripple.lit[i] = true;
         }
         if (_ripple.lit[i] && elapsed >= fadeAt) {
