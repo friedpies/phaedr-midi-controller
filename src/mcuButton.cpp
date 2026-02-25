@@ -59,12 +59,48 @@ void MCUButton::setLedState(uint8_t velocity)
 {
     if (!_hasLed) return;
     if (velocity == 0) {
-        SoftPWMSet(_ledPin, 0);                  // off
+        stopBlink();                     // stop blink, LED goes dark
     } else if (velocity == 127) {
-        SoftPWMSet(_ledPin, LED_MAX_BRIGHTNESS); // capped brightness — stays within USB 500mA budget
+        stopBlink();                     // stop blink first
+        SoftPWMSet(_ledPin, LED_MAX_BRIGHTNESS);  // then set solid on
     }
-    // velocity == 1 (blink) is handled in Phase 2 — ignore for now
+    // velocity == 1 from Logic = "blink" command; handled by pickup FSM — ignore here
+    // (pickup FSM manages its own startBlink/stopBlink lifecycle)
 }
+
+void MCUButton::startBlink(uint16_t periodMs)
+{
+    if (!_hasLed) return;
+    _blinkPeriodMs = (periodMs < 100) ? 100 : periodMs;  // floor at 100ms
+    if (!_blinking) {
+        _blinking    = true;
+        _blinkPhase  = true;  // start with LED on
+        _lastBlinkMs = millis();
+        SoftPWMSet(_ledPin, LED_MAX_BRIGHTNESS);
+    }
+    // If already blinking, only update period — do not reset phase to avoid flicker
+}
+
+void MCUButton::stopBlink()
+{
+    _blinking   = false;
+    _blinkPhase = false;
+    if (_hasLed) SoftPWMSet(_ledPin, 0);  // go dark immediately — no confirmation animation
+}
+
+void MCUButton::updateBlink()
+{
+    if (!_blinking || !_hasLed) return;
+    uint32_t now        = millis();
+    uint32_t halfPeriod = _blinkPeriodMs / 2;
+    if (now - _lastBlinkMs >= halfPeriod) {
+        _blinkPhase  = !_blinkPhase;
+        SoftPWMSet(_ledPin, _blinkPhase ? LED_MAX_BRIGHTNESS : 0);
+        _lastBlinkMs = now;
+    }
+}
+
+bool MCUButton::isBlinking() const { return _blinking; }
 
 int MCUButton::getLedPin() const { return _ledPin; }
 int MCUButton::getNoteNum() const { return _noteNum; }

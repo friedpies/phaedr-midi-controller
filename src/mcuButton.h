@@ -17,7 +17,11 @@ public:
     void init();
     void read();
     bool poll();                         // debounce update only — returns true on press, no MIDI output
-    void setLedState(uint8_t velocity);  // 0=off, 127=on; 1=blink handled Phase 2
+    void setLedState(uint8_t velocity);  // 0=off, 127=on; 1=blink handled by pickup FSM
+    void startBlink(uint16_t periodMs);  // activate blink with given period; on/off split is 50/50
+    void stopBlink();                    // stop blink, set LED dark immediately — no confirmation flash
+    void updateBlink();                  // call every loop() — no-op if not blinking or no LED
+    bool isBlinking() const;
     int getLedPin() const;
     int getNoteNum() const;
 
@@ -28,6 +32,10 @@ private:
     int _debounceTime;
     bool _hasLed;  // false for buttons with no LED (Stop btn 15, Play btn 16)
     Bounce _bounce;
+    bool     _blinking      = false;
+    uint16_t _blinkPeriodMs = 500;
+    uint32_t _lastBlinkMs   = 0;
+    bool     _blinkPhase    = false;  // false = LED off phase, true = LED on phase
 };
 
 #endif
