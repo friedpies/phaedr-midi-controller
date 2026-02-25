@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 
 ## Current Position
 
-Phase: 1 of 4 (MCU Protocol Foundation) — COMPLETE
-Plan: 5 of 5 in current phase — ALL COMPLETE
-Status: Phase 1 complete — hardware verification approved; all 5 plans executed and summarized; ready for Phase 2
-Last activity: 2026-02-22 — Hardware verification approved: Logic Pro recognizes Mackie Control surface, LED feedback confirmed, pulse wave animation running across all 24 LEDs
+Phase: 2 of 4 (LED State + Pickup Mode) — IN PROGRESS
+Plan: 1 of 3 in current phase — 1 complete, 2 remaining
+Status: Phase 2 Plan 01 complete — MCUButton blink state machine added and verified via pio run
+Last activity: 2026-02-25 — Blink API (startBlink/stopBlink/updateBlink/isBlinking) added to MCUButton; pio build clean; PICK-03 and PICK-04 requirements marked complete
 
-Progress: [████████░░] 40%
+Progress: [████████░░] 43%
 
 ## Performance Metrics
 
@@ -35,6 +35,7 @@ Progress: [████████░░] 40%
 
 *Updated after each plan completion*
 | Phase 01-mcu-protocol-foundation P05 | 8 | 3 tasks | 15 files |
+| Phase 02-led-state-pickup-mode P01 | 3 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,9 @@ From 01-04 execution:
 - [Phase 01-mcu-protocol-foundation]: SOFTPWM_MAXCHANNELS increased from 20 to 22 via local lib/SoftPWM/ vendoring — required to support all 22 LED channels (K1-K14 + P1-P8); K13 LED explicitly registered with SoftPWMSet despite ledPin=-1 in MCUButton
 - [Phase 01-mcu-protocol-foundation — VERIFIED]: MCU SysEx handshake works with Logic Pro — surface recognized as Mackie Control; LED feedback confirmed on channel strip buttons; transport buttons control Logic playback; sliders send Pitch Bend on per-channel MIDI channels
 - [Phase 01-mcu-protocol-foundation]: Pulse wave animation chosen: 5-LED window sweeps K1→P8 then reverses, twice (~4.4s); comet tail via SoftPWM fade-out on trailing LEDs; preferred over cascade and fill/drain slosh after iteration
+- [Phase 02-led-state-pickup-mode]: startBlink() preserves blinkPhase if already blinking to avoid visual flicker on period updates
+- [Phase 02-led-state-pickup-mode]: startBlink() floors period at 100ms — sub-100ms periods would create visual noise given SoftPWM's 125ms fade time
+- [Phase 02-led-state-pickup-mode]: stopBlink() unconditionally called in setLedState(0/127) — DAW LED state always wins over pickup blink
 
 ### Pending Todos
 
@@ -91,6 +95,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-22
-Stopped at: Plan 01-05 complete — hardware verification approved; pulse wave animation (5-LED comet sweep, ~4.4s) selected after iteration; Phase 1 fully done
-Resume file: Begin Phase 2 (LED State + Pickup Mode)
+Last session: 2026-02-25
+Stopped at: Plan 02-01 complete — MCUButton blink state machine (startBlink/stopBlink/updateBlink/isBlinking) added; pio build verified 0 errors; PICK-03/PICK-04 complete
+Resume file: Begin Phase 2 Plan 02 (pickup FSM — calls startBlink/stopBlink on track button MCUButtons per fader sync state)
