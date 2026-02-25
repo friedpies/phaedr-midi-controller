@@ -42,7 +42,12 @@ Plans:
   2. Sweeping a fader through its DAW target position stops the blink on that channel's button at the exact crossover point and resumes MIDI output
   3. A fader already at position 0 or 127 when the DAW value is also 0 or 127 picks up immediately without requiring additional physical movement
   4. The loop toggle button LED reflects Logic's cycle mode state (lights when cycle is on, goes dark when cycle is off)
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Add millis()-based blink state machine to MCUButton (PICK-03, PICK-04)
+- [ ] 02-02-PLAN.md — Fader pickup FSM: DAW value tracking, MIDI suppression, crossover detection (PICK-01, PICK-02, PICK-04, PICK-05, PICK-06)
+- [ ] 02-03-PLAN.md — Integration: InputManager + main.cpp wiring, mcuConfig.h, LED-03 NoteRegistry, hardware verification checkpoint (LED-03, PICK-01, PICK-02, PICK-03, PICK-05, PICK-06)
 
 ### Phase 3: Grid Transport Layout
 **Goal**: All 16 grid buttons send correct MCU note numbers, the bottom row functions as a transport hub (Shift, Record, Stop, Play), cursor navigation controls Logic, and holding Shift activates secondary button functions
