@@ -66,6 +66,16 @@ void handleNoteOff(byte channel, byte note, byte velocity)
     inputManager.handleNoteMessage(note, 0);  // treat NoteOff as velocity 0
 }
 
+// PICK-01: Receive fader position feedback from Logic Pro.
+// Logic sends Pitch Bend on MIDI channels 1-8 to tell the controller each fader's current DAW value.
+// Teensyduino callback: value is signed -8192..+8191; convert to 14-bit 0..16383 with +8192 offset.
+void handlePitchBend(byte channel, int value)
+{
+    if (channel >= 1 && channel <= 8) {
+        inputManager.setFaderDawValue(channel - 1, value + 8192);
+    }
+}
+
 void setup()
 {
     // SoftPWMBegin() is called inside inputManager.init() — do not call twice
@@ -76,6 +86,7 @@ void setup()
     usbMIDI.setHandleSystemExclusive(handleSysEx);
     usbMIDI.setHandleNoteOn(handleNoteOn);
     usbMIDI.setHandleNoteOff(handleNoteOff);
+    usbMIDI.setHandlePitchChange(handlePitchBend);  // PICK-01: receive fader DAW values from Logic
     // Note: CC handler intentionally removed — per CONTEXT.md clean break decision
     // Note: handleStart/handleClock/handleStop will be added in Phase 4 for beat chaser
 }
@@ -84,6 +95,7 @@ void loop()
 {
     if (mcuProtocol.isHandshakeComplete()) {
         inputManager.readAll();
+        inputManager.updateBlinks();  // PICK-03: advance channel button blink state machines
     } else {
         inputManager.readIdle();    // pre-handshake: detect presses for ripple, no MIDI output
         inputManager.updateRipple();

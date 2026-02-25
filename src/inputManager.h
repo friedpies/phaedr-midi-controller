@@ -18,6 +18,8 @@ public:
     void readIdle();      // idle mode: debounce buttons, trigger ripple on press — no MIDI output
     void updateRipple();  // advance ripple animation one step (non-blocking, millis-based)
     void handleNoteMessage(byte note, uint8_t velocity);
+    void updateBlinks();                               // PICK-03: drive all channel button blink timers
+    void setFaderDawValue(int faderIdx, int val14bit); // PICK-01: route incoming pitch bend to fader
 
     static const int NUM_GRID_BUTTONS = 16;
     static const int NUM_TRACKS = 8;

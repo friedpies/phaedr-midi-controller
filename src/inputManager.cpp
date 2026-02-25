@@ -1,4 +1,5 @@
 #include "inputManager.h"
+#include "mcuConfig.h"
 
 void InputManager::init()
 {
@@ -62,6 +63,12 @@ void InputManager::init()
     trackFaders[6].setup(SLIDE_7, 7);
     trackFaders[7].setup(SLIDE_8, 8);
 
+    // PICK-03/PICK-04: Associate each fader with its channel strip button for blink control.
+    // fader[0] (MIDI ch1, SLIDE_1) <-> trackButtons[0] (P1), ..., fader[7] <-> trackButtons[7] (P8)
+    for (int i = 0; i < NUM_TRACKS; i++) {
+        trackFaders[i].setChannelButton(&trackButtons[i]);
+    }
+
     // ---- Init all buttons ----
     for (int i = 0; i < NUM_GRID_BUTTONS; i++) {
         gridButtons[i].init();
@@ -105,6 +112,12 @@ void InputManager::init()
     noteRegistry.registerButton(5, &trackButtons[5]);
     noteRegistry.registerButton(6, &trackButtons[6]);
     noteRegistry.registerButton(7, &trackButtons[7]);
+
+    // LED-03: Loop/Punch/Metronome grid button LED feedback from Logic Pro.
+    // Note numbers defined in mcuConfig.h — update there after hardware MIDI monitor verification.
+    noteRegistry.registerButton(MCU_NOTE_LOOP,      &gridButtons[MCU_LOOP_GRID_INDEX]);
+    noteRegistry.registerButton(MCU_NOTE_PUNCH_IN,  &gridButtons[MCU_PUNCH_GRID_INDEX]);
+    noteRegistry.registerButton(MCU_NOTE_METRONOME, &gridButtons[MCU_METRO_GRID_INDEX]);
 }
 
 // Physical 2D positions of each LED in grid-cell units (one grid cell = 1.0).
@@ -213,4 +226,21 @@ void InputManager::readAll()
         trackKnobs[i].read();
         trackFaders[i].read();
     }
+}
+
+void InputManager::updateBlinks()
+{
+    // PICK-03: advance blink state machines for all 8 channel strip buttons.
+    // Must be called every loop() iteration — millis()-delta gating ensures no blocking.
+    for (int i = 0; i < NUM_TRACKS; i++) {
+        trackButtons[i].updateBlink();
+    }
+}
+
+void InputManager::setFaderDawValue(int faderIdx, int value14bit)
+{
+    // PICK-01: route incoming pitch bend (from handlePitchBend in main.cpp) to the correct fader.
+    // faderIdx is 0-based (caller passes channel - 1).
+    if (faderIdx < 0 || faderIdx >= NUM_TRACKS) return;
+    trackFaders[faderIdx].setDawValue(value14bit);
 }
