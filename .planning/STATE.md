@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 ## Current Position
 
 Phase: 2 of 4 (LED State + Pickup Mode) — IN PROGRESS
-Plan: 1 of 3 in current phase — 1 complete, 2 remaining
-Status: Phase 2 Plan 01 complete — MCUButton blink state machine added and verified via pio run
-Last activity: 2026-02-25 — Blink API (startBlink/stopBlink/updateBlink/isBlinking) added to MCUButton; pio build clean; PICK-03 and PICK-04 requirements marked complete
+Plan: 2 of 3 in current phase — 2 complete, 1 remaining
+Status: Phase 2 Plan 02 complete — Fader pickup FSM (SYNCED/OUT_OF_SYNC) added and verified via pio run
+Last activity: 2026-02-25 — Pickup FSM implemented in Fader class; setDawValue bank switch detection; lazy blink reveal; crossover with snap; PICK-01/02/04/05/06 complete
 
-Progress: [████████░░] 43%
+Progress: [█████████░] 52%
 
 ## Performance Metrics
 
@@ -36,6 +36,7 @@ Progress: [████████░░] 43%
 *Updated after each plan completion*
 | Phase 01-mcu-protocol-foundation P05 | 8 | 3 tasks | 15 files |
 | Phase 02-led-state-pickup-mode P01 | 3 | 1 tasks | 2 files |
+| Phase 02-led-state-pickup-mode P02 | 3 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,10 @@ From 01-04 execution:
 - [Phase 02-led-state-pickup-mode]: startBlink() preserves blinkPhase if already blinking to avoid visual flicker on period updates
 - [Phase 02-led-state-pickup-mode]: startBlink() floors period at 100ms — sub-100ms periods would create visual noise given SoftPWM's 125ms fade time
 - [Phase 02-led-state-pickup-mode]: stopBlink() unconditionally called in setLedState(0/127) — DAW LED state always wins over pickup blink
+- [Phase 02-led-state-pickup-mode]: PICKUP_DEADBAND=128 in 14-bit units — larger than FADER_NOISE_THRESHOLD (48) to prevent ADC jitter false pickups
+- [Phase 02-led-state-pickup-mode]: enterPickupMode() does NOT call startBlink() — lazy reveal: blink only on first physical touch after bank switch
+- [Phase 02-led-state-pickup-mode]: setDawValue() guards on _dawValue14bit >= 0 — skips false bank switch on first power-on DAW value
+- [Phase 02-led-state-pickup-mode]: startBlink() called on every significant move in OUT_OF_SYNC with distance-mapped period (600–200ms) — continuous visual speedometer toward target
 
 ### Pending Todos
 
@@ -96,5 +101,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Plan 02-01 complete — MCUButton blink state machine (startBlink/stopBlink/updateBlink/isBlinking) added; pio build verified 0 errors; PICK-03/PICK-04 complete
-Resume file: Begin Phase 2 Plan 02 (pickup FSM — calls startBlink/stopBlink on track button MCUButtons per fader sync state)
+Stopped at: Plan 02-02 complete — Fader pickup FSM (SYNCED/OUT_OF_SYNC); setDawValue bank switch detection; lazy blink reveal; crossover with snap pitch bend; pio build 0 errors; PICK-01/02/04/05/06 complete
+Resume file: Begin Phase 2 Plan 03 (InputManager wiring: setChannelButton, setDawValue on pitch bend receive, updateBlink in readAll)

@@ -78,7 +78,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. MCU Protocol Foundation | 5/5 | Complete   | 2026-02-22 |
-| 2. LED State + Pickup Mode | 0/TBD | Not started | - |
+| 2. LED State + Pickup Mode | 2/3 | In Progress|  |
 | 3. Grid Transport Layout | 0/TBD | Not started | - |
 | 4. Animation Manager | 0/TBD | Not started | - |
 

@@ -23,12 +23,12 @@
 
 ### Pickup Mode
 
-- [ ] **PICK-01**: Each fader tracks last known DAW value received via incoming pitch bend on MIDI channels 1–8
-- [ ] **PICK-02**: Fader MIDI output is suppressed until physical position crosses through (or within tolerance of) the DAW value
+- [x] **PICK-01**: Each fader tracks last known DAW value received via incoming pitch bend on MIDI channels 1–8
+- [x] **PICK-02**: Fader MIDI output is suppressed until physical position crosses through (or within tolerance of) the DAW value
 - [x] **PICK-03**: Channel button LED blinks (500ms period) while fader is out of sync with DAW value
 - [x] **PICK-04**: LED blink stops and fader becomes active exactly when pickup occurs
-- [ ] **PICK-05**: All 8 faders re-enter pickup mode (blink) on every bank switch
-- [ ] **PICK-06**: Boundary edge case handled: faders at 0 or 127 pick up immediately if DAW value matches
+- [x] **PICK-05**: All 8 faders re-enter pickup mode (blink) on every bank switch
+- [x] **PICK-06**: Boundary edge case handled: faders at 0 or 127 pick up immediately if DAW value matches
 
 ### Grid Transport Layout
 
@@ -120,12 +120,12 @@
 | LED-04 | Phase 1 | Complete |
 | PWR-01 | Phase 1 | Complete |
 | BOOT-01 | Phase 1 | Complete |
-| PICK-01 | Phase 2 | Pending |
-| PICK-02 | Phase 2 | Pending |
+| PICK-01 | Phase 2 | Complete |
+| PICK-02 | Phase 2 | Complete |
 | PICK-03 | Phase 2 | Complete |
 | PICK-04 | Phase 2 | Complete |
-| PICK-05 | Phase 2 | Pending |
-| PICK-06 | Phase 2 | Pending |
+| PICK-05 | Phase 2 | Complete |
+| PICK-06 | Phase 2 | Complete |
 | GRID-01 | Phase 3 | Pending |
 | GRID-02 | Phase 3 | Pending |
 | GRID-03 | Phase 3 | Pending |
