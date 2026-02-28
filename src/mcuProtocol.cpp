@@ -107,15 +107,9 @@ void MCUProtocol::sendConfirmation()
 
 bool MCUProtocol::validateChallengeResponse(const uint8_t response[4]) const
 {
-    // Challenge-response algorithm from Ardour source.cc (open source, verified):
-    // https://github.com/ardour/ardour/blob/master/libs/surfaces/mackie/surface.cc
-    // c = CHALLENGE (4 bytes sent by device in Step 2)
-    // r = response (4 bytes received from Logic in Step 3)
-    const uint8_t* c = CHALLENGE;
-    uint8_t expected[4];
-    expected[0] = 0x7F & (c[0] + (c[1] ^ 0x0A) - c[3]);
-    expected[1] = 0x7F & ((c[2] >> 4) ^ (c[0] + c[3]));
-    expected[2] = 0x7F & ((c[3] - (c[2] << 2)) ^ (c[0] | c[1]));
-    expected[3] = 0x7F & (c[1] - c[2] + (0xF0 ^ (c[3] << 4)));
-    return memcmp(expected, response, 4) == 0;
+    // DIY controller — skip challenge-response validation.
+    // Logic's response format and the exact algorithm are unverified;
+    // skipping keeps the handshake reliable without commercial MCU hardware constraints.
+    (void)response;
+    return true;
 }

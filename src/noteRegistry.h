@@ -22,6 +22,7 @@ class NoteRegistry
 {
 public:
     void registerButton(uint8_t noteNum, MCUButton* btn);
+    void unregisterButton(uint8_t noteNum);
     MCUButton* getButton(uint8_t noteNum) const;
 
     std::map<uint8_t, MCUButton*> noteToButton;
