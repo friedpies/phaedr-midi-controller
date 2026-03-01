@@ -51,9 +51,10 @@ public:
     // PICKUP_DEADBAND: ~128 = ≈1 in 7-bit MIDI. Must be > FADER_NOISE_THRESHOLD (48).
     // Start at 128; increase if fader noise causes false pickups; decrease if feel is too loose.
     static const int PICKUP_DEADBAND        = 128;
-    // BANK_SWITCH_THRESHOLD: DAW value delta that signals a bank switch vs fader automation.
-    // 512 in 14-bit ≈ 4 in 7-bit MIDI. Tune up if automation causes false triggers.
-    static const int BANK_SWITCH_THRESHOLD  = 512;
+    // BANK_SWITCH_THRESHOLD: distance between incoming DAW value and physical fader position
+    // that signals a bank switch vs. Logic echoing our own movement.
+    // 1024 in 14-bit ≈ 8 in 7-bit MIDI. Increase if ADC jitter causes false triggers.
+    static const int BANK_SWITCH_THRESHOLD  = 1024;
 
 private:
     int _pin;

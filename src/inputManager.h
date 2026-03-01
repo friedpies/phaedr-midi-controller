@@ -50,16 +50,18 @@ private:
     // Sends Pitch Bend on MIDI channels 1–8 per MCU fader protocol
     Fader trackFaders[NUM_TRACKS];
 
-    // MCU-06: Knobs reassigned to CC 16–23 (absolute VPot format)
+    // MCU-06: Knobs on CC 16–23, relative VPot encoder format.
+    // Logic Pro interprets CC 16-23 as relative encoder messages (MCU spec), not absolute
+    // positions. Each message encodes CW (+, 0x01-0x3F) or CCW (-, 0x41-0x7F) step count.
     Potentiometer trackKnobs[NUM_TRACKS] = {
-        Potentiometer(KNOB_1, 16, true),
-        Potentiometer(KNOB_2, 17, true),
-        Potentiometer(KNOB_3, 18, true),
-        Potentiometer(KNOB_4, 19, true),
-        Potentiometer(KNOB_5, 20, true),
-        Potentiometer(KNOB_6, 21, true),
-        Potentiometer(KNOB_7, 22, true),
-        Potentiometer(KNOB_8, 23, true)
+        Potentiometer(KNOB_1, 16, false, true),
+        Potentiometer(KNOB_2, 17, false, true),
+        Potentiometer(KNOB_3, 18, false, true),
+        Potentiometer(KNOB_4, 19, false, true),
+        Potentiometer(KNOB_5, 20, false, true),
+        Potentiometer(KNOB_6, 21, false, true),
+        Potentiometer(KNOB_7, 22, false, true),
+        Potentiometer(KNOB_8, 23, false, true)
     };
 };
 

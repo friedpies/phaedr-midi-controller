@@ -29,13 +29,21 @@ void Fader::enterPickupMode() {
 }
 
 void Fader::setDawValue(int newValue14bit) {
-    // PICK-05 / bank switch detection: if the DAW value changes by a large amount
-    // while this fader is SYNCED, treat it as a bank switch and enter pickup mode.
-    // Guard: _dawValue14bit >= 0 ensures we skip the check on first power-on receipt
-    // (Pitfall 4 from RESEARCH.md — first bank switch after boot)
-    if (_dawValue14bit >= 0 && _pickupState == SYNCED) {
-        int delta = abs(newValue14bit - _dawValue14bit);
-        if (delta > BANK_SWITCH_THRESHOLD) {
+    // PICK-05 / bank switch detection: if the DAW sends a value far from the physical
+    // fader position while SYNCED, treat it as a bank switch and enter pickup mode.
+    //
+    // Compare against _lastFader14bit (physical position) — NOT _dawValue14bit (previous
+    // DAW value). Comparing against the previous DAW value caused false triggers: when
+    // Logic echoes our own fader movement, the delta equals the distance we just moved,
+    // easily exceeding BANK_SWITCH_THRESHOLD (3% of travel) and bouncing us to OUT_OF_SYNC.
+    //
+    // Comparing against the physical position: Logic's echo ≈ _lastFader14bit → delta ≈ 0
+    // → no trigger. A real bank switch sends a value far from the physical position → triggers.
+    //
+    // Fall back to _dawValue14bit if fader hasn't moved yet (_lastFader14bit == -1).
+    if (_pickupState == SYNCED) {
+        int ref = (_lastFader14bit >= 0) ? _lastFader14bit : _dawValue14bit;
+        if (ref >= 0 && abs(newValue14bit - ref) > BANK_SWITCH_THRESHOLD) {
             enterPickupMode();
         }
     }
