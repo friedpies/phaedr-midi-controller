@@ -20,8 +20,8 @@ static void playStartupAnimation()
     const int STEP   = 35;  // ms per LED position
     const int WINDOW = 5;   // pulse width — trailing edge fades via SoftPWM
 
-    // 3 full back-and-forth sweeps (~6.5 seconds total)
-    for (int sweep = 0; sweep < 3; sweep++) {
+    // 2 full back-and-forth sweeps (~6.5 seconds total)
+    for (int sweep = 0; sweep < 2; sweep++) {
         // Forward: pulse travels K1 → P8
         for (int i = 0; i < N; i++) {
             SoftPWMSet(allLeds[i], LED_MAX_BRIGHTNESS);
@@ -44,7 +44,6 @@ static void playStartupAnimation()
     }
     delay(200);  // final settle
 }
-// Total: 3 × (24×35ms fwd + 150 + 24×35ms back + 150) + 200 ≈ 6.5 seconds
 
 // SysEx handler — forwards to MCUProtocol state machine
 void handleSysEx(const uint8_t* data, uint16_t length, bool complete)

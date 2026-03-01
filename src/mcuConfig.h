@@ -15,6 +15,10 @@
 // Loop/Punch/Metronome in Logic, observe which note numbers appear in Serial output
 // (add temporary Serial.print(note) in handleNoteOn if needed), then update below.
 
+// Bank navigation (sent hardware → Logic to shift the 8-channel bank window)
+#define MCU_NOTE_BANK_LEFT       46   // Bank << — shift bank 8 tracks left
+#define MCU_NOTE_BANK_RIGHT      47   // Bank >> — shift bank 8 tracks right
+
 // Track strip function note bases (MCU protocol, channel 1)
 #define MCU_NOTE_ARM_BASE         0   // Arm  Ch1-Ch8: notes 0-7
 #define MCU_NOTE_SOLO_BASE        8   // Solo Ch1-Ch8: notes 8-15

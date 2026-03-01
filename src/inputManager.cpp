@@ -6,9 +6,10 @@ void InputManager::init()
     SoftPWMBegin();
 
     // ---- Grid buttons (K1–K16) ----
-    // K1–K12: inert for now — no MIDI note, LEDs available for future use
-    gridButtons[0].setup(K1_SW,  LED_K1,  -1, DEBOUNCE_TIME);
-    gridButtons[1].setup(K2_SW,  LED_K2,  -1, DEBOUNCE_TIME);
+    // K1: Bank Left — shifts 8-channel bank window 8 tracks left
+    gridButtons[0].setup(K1_SW,  LED_K1,  MCU_NOTE_BANK_LEFT,  DEBOUNCE_TIME);
+    // K2: Bank Right — shifts 8-channel bank window 8 tracks right
+    gridButtons[1].setup(K2_SW,  LED_K2,  MCU_NOTE_BANK_RIGHT, DEBOUNCE_TIME);
     gridButtons[2].setup(K3_SW,  LED_K3,  -1, DEBOUNCE_TIME);
     gridButtons[3].setup(K4_SW,  LED_K4,  -1, DEBOUNCE_TIME);
     gridButtons[4].setup(K5_SW,  LED_K5,  -1, DEBOUNCE_TIME);

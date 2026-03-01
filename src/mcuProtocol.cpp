@@ -18,11 +18,13 @@ MCUProtocol::MCUProtocol()
 
 void MCUProtocol::begin()
 {
-    // Send an unsolicited Host Connection Query on startup.
-    // If Logic is already running with this surface configured, it responds with a reply.
-    // If Logic hasn't started yet, the retry timer in update() resends every 5 seconds.
+    // Send an unsolicited Host Connection Query so Logic recognizes the surface.
+    // We don't wait for the SysEx reply — Logic sends state (notes, pitch bend) regardless.
+    // Teensyduino strips F0 from the SysEx data buffer, so the header check in handleSysEx
+    // would always fail; skipping SysEx-based completion is more reliable.
     sendHostConnectionQuery();
     _lastRetryMs = millis();
+    _handshakeComplete = true;  // start in connected mode immediately
 }
 
 void MCUProtocol::update()
