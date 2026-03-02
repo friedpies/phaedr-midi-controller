@@ -36,7 +36,7 @@ public:
     Fader(int pin, int midiChannel);
     // setup() for two-phase init (default-construct array, then configure in init())
     void setup(int pin, int midiChannel);
-    void read();
+    bool read();
 
     void setDawValue(int value14bit);         // PICK-01: store DAW value, detect bank switch
     void enterPickupMode();                   // set OUT_OF_SYNC, reset lazy-reveal flag

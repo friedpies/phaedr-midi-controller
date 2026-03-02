@@ -10,7 +10,7 @@ public:
     Potentiometer(int pin, int ccNum, bool invert = false, bool relative = false)
         : _pin(pin), _ccNum(ccNum), _invert(invert), _relative(relative) {}
     void init();
-    void read();
+    bool read();
     static const int READ_RESOLUTION = 1024;
     static const int ANALOG_NOISE = 3;
 

@@ -50,8 +50,8 @@ void Fader::setDawValue(int newValue14bit) {
     _dawValue14bit = newValue14bit;
 }
 
-void Fader::read() {
-    if (_pin < 0) return;
+bool Fader::read() {
+    if (_pin < 0) return false;
 
     int raw        = analogRead(_pin);  // 0-1023 (10-bit ADC on Teensy 3.5 default)
 
@@ -63,8 +63,10 @@ void Fader::read() {
     // only updated on meaningful changes, keeping the crossover check stable.
     bool significantMove = (_lastFader14bit < 0 ||
                             abs(fader14bit - _lastFader14bit) > FADER_NOISE_THRESHOLD);
-    if (!significantMove) return;
+    if (!significantMove) return false;
 
+    // First read after power-on: capture position without triggering track selection
+    bool firstRead = (_lastFader14bit < 0);
     _lastFader14bit = fader14bit;
 
     if (_pickupState == OUT_OF_SYNC) {
@@ -99,8 +101,8 @@ void Fader::read() {
             // MCU spec uses 0-16383. Apply -8192 offset to convert.
             usbMIDI.sendPitchBend(fader14bit - 8192, _midiChannel);
         }
-        // Suppress MIDI while OUT_OF_SYNC — return without sending
-        return;
+        // Physical movement during OUT_OF_SYNC still counts for track selection
+        return !firstRead;
     }
 
     // SYNCED: normal pitch bend output
@@ -109,4 +111,5 @@ void Fader::read() {
     // Without this offset, values above 8191 are clamped and Logic fader
     // only moves in the lower half of travel.
     usbMIDI.sendPitchBend(fader14bit - 8192, _midiChannel);
+    return !firstRead;
 }

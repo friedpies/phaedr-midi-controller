@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** A controller that feels alive — LEDs accurately reflect DAW state, a beat chaser pulses with the music, and every interaction has immediate, satisfying visual feedback.
-**Current focus:** Phase 2 — LED State + Pickup Mode (Phase 1 complete)
+**Current focus:** Phase 3 — Grid Transport Layout (Phases 1–2 complete)
 
 ## Current Position
 
-Phase: 2 of 4 (LED State + Pickup Mode) — IN PROGRESS
-Plan: 2 of 3 in current phase — 2 complete, 1 remaining
-Status: Phase 2 Plan 02 complete — Fader pickup FSM (SYNCED/OUT_OF_SYNC) added and verified via pio run
-Last activity: 2026-02-25 — Pickup FSM implemented in Fader class; setDawValue bank switch detection; lazy blink reveal; crossover with snap; PICK-01/02/04/05/06 complete
+Phase: 3 of 4 (Grid Transport Layout) — NOT STARTED
+Plan: 0 of TBD in current phase
+Status: Phase 2 complete — all pickup mode and LED state requirements verified on hardware
+Last activity: 2026-03-01 — Phase 2 closed out (02-03-SUMMARY.md written); 3 hardware bugs fixed during verification
 
-Progress: [█████████░] 52%
+Progress: [██████████░░░░░░░░░░] 50%
 
 ## Performance Metrics
 
@@ -100,6 +100,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-25
-Stopped at: Plan 02-02 complete — Fader pickup FSM (SYNCED/OUT_OF_SYNC); setDawValue bank switch detection; lazy blink reveal; crossover with snap pitch bend; pio build 0 errors; PICK-01/02/04/05/06 complete
-Resume file: Begin Phase 2 Plan 03 (InputManager wiring: setChannelButton, setDawValue on pitch bend receive, updateBlink in readAll)
+Last session: 2026-03-01
+Stopped at: Phase 2 closed out — 02-03-SUMMARY.md written, STATE.md and ROADMAP.md updated
+Resume file: Phase 3 not yet started — needs planning

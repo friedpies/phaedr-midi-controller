@@ -4,27 +4,27 @@ void Potentiometer::init()
 {
 }
 
-void Potentiometer::read()
+bool Potentiometer::read()
 {
     int value = analogRead(_pin);
     if (_invert)
         value = READ_RESOLUTION - value;
 
-    if (!hasChanged(value)) return;
+    if (!hasChanged(value)) return false;
 
     if (_relative) {
         if (lastReading < 0) {
             // First read: capture current position without sending — avoids
             // slamming the DAW parameter to an arbitrary position on power-on.
             lastReading = value;
-            return;
+            return false;
         }
         _relAccum -= (value - lastReading);  // negate: physical CW → positive steps → CW MIDI
         lastReading = value;
 
         int steps = _relAccum / ADC_PER_STEP;
         _relAccum %= ADC_PER_STEP;  // carry remainder into next call
-        if (steps == 0) return;
+        if (steps == 0) return false;
 
         // MCU VPot sign-magnitude relative format (Logic Pro / Mackie Control):
         //   CW:  0x01-0x3F (bit 6 = 0, bits 0-5 = speed 1-63)
@@ -34,9 +34,11 @@ void Potentiometer::read()
             ? (uint8_t)absSteps           // CW:  0x01-0x3F
             : (uint8_t)(absSteps | 0x40); // CCW: 0x41-0x7F
         usbMIDI.sendControlChange(_ccNum, msg, 1);
+        return true;
     } else {
         lastReading = value;
         usbMIDI.sendControlChange(_ccNum, map(lastReading, 0, 1023, 0, 127), 1);
+        return true;
     }
 }
 

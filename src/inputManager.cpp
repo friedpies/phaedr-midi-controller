@@ -200,8 +200,14 @@ void InputManager::readAll()
             usbMIDI.sendNoteOn(24 + i, 127, 1);
             usbMIDI.sendNoteOff(24 + i, 0, 1);
         }
-        trackKnobs[i].read();
-        trackFaders[i].read();
+        bool knobMoved  = trackKnobs[i].read();
+        bool faderMoved = trackFaders[i].read();
+
+        if ((knobMoved || faderMoved) && _selectedTrack != i) {
+            _selectedTrack = i;
+            usbMIDI.sendNoteOn(24 + i, 127, 1);
+            usbMIDI.sendNoteOff(24 + i, 0, 1);
+        }
     }
 }
 
