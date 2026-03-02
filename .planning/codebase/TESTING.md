@@ -1,197 +1,246 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-02-20
+**Analysis Date:** 2026-03-02
 
 ## Test Framework
 
 **Runner:**
-- PlatformIO Unit Testing framework (optional, not configured)
-- Test directory structure exists at `test/` but no actual test implementations present
-- Config: `test/README` indicates PlatformIO unit testing support is available but not in use
+- PlatformIO Unit Testing framework (configured in `platformio.ini`)
+- Supported via `pio test` command
+- Test directory: `test/`
+- No actual test files found in repository (only README placeholder)
 
 **Assertion Library:**
-- Not applicable — no tests implemented
+- Not determined (no test files present to inspect)
+- PlatformIO supports Arduino Unit Test library by default
 
 **Run Commands:**
 ```bash
-pio test                    # Run PlatformIO unit tests (if configured)
-pio run                     # Build firmware (current workflow)
-pio run --target upload     # Upload to Teensy (validation method)
-pio device monitor          # Serial monitor for manual testing
+pio test                  # Run all tests
+pio test --verbose        # Run tests with detailed output
+pio run --target upload   # Upload firmware to Teensy (deployment, not testing)
+pio run                   # Build firmware
 ```
 
 ## Test File Organization
 
 **Location:**
-- Dedicated `test/` directory exists at repository root (`/Users/kenmarut/repo/phaedr-midi-controller/test/`)
-- Currently empty except for `README`
-- Convention: PlatformIO expects test files in `test/test_*/` subdirectories
+- Intended location: `test/` directory per PlatformIO standard
+- Pattern: Not yet established (directory empty except for README)
+- Recommended: `test/test_[module].cpp` per PlatformIO convention
 
 **Naming:**
-- Not established — no test files present
+- Not yet established in this codebase
+- Expected PlatformIO pattern: `test_*.cpp` files in `test/` directory
 
 **Structure:**
 ```
 test/
-└── README                  # PlatformIO unit testing documentation
+├── README              # PlatformIO template docs
+└── (no test files)
 ```
 
-## Current Testing Approach
+## Current Testing Status
 
-**No Automated Tests:**
-- The codebase has no unit tests, integration tests, or automated test suites
-- Testing is entirely manual and hardware-based
+**Test Coverage:** Zero
 
-**Manual Testing Workflow:**
-1. Build firmware: `pio run`
-2. Upload to Teensy: `pio run --target upload`
-3. Monitor serial output: `pio device monitor`
-4. Physical interaction: press buttons, turn knobs, move sliders
-5. Observe: LEDs light up, Serial output logs events, DAW receives/responds to MIDI
+**Reason:** Embedded firmware project with hardware dependencies (Teensy 3.5, SoftPWM, Bounce2 debouncing). Testing strategy not yet implemented.
 
-**Validation Strategy:**
-- Hardware integration testing: buttons send correct CC values (102–117 for grid, 20–27 for track buttons)
-- LED feedback testing: DAW sends CC values that correctly update LED states
-- Analog input testing: knobs and sliders send smoothed, mapped CC values (0–127)
-- Bidirectional MIDI testing: controller ↔ DAW CC message round-trips
+**Obstacles to Testing:**
+1. **Hardware dependencies:** Code depends on:
+   - `analogRead()` (Teensy ADC)
+   - `usbMIDI.sendControlChange()` (USB MIDI library)
+   - `usbMIDI.sendNoteOn/Off()` (USB MIDI)
+   - `SoftPWMSet()` (SoftPWM LED driver)
+   - `Bounce::update()` (button debouncing library)
+   - `millis()` (hardware timer)
 
-## Test Structure
+2. **No abstraction layer:** Hardware calls are embedded directly in business logic:
+   ```cpp
+   // In Button::read() — direct MIDIUSB call
+   usbMIDI.sendControlChange(_ccNum, 127, 1);
 
-**Serial Logging for Verification:**
-Observable patterns in code that support manual testing:
-
-```cpp
-// main.cpp - MIDI event logging
-void handleControlChangeMessage(byte channel, byte ccNum, byte velocity)
-{
-    Serial.println("CONTROL CHANGE");
-    inputManager.handleControlChangeMessage(channel, ccNum, velocity);
-}
-
-void handleStart()
-{
-    Serial.println("HANDLE START");
-}
-
-void handleClock()
-{
-    Serial.println("HANDLE CLOCK");
-}
-```
-
-**Commented Debug Code (Disabled Tests):**
-- `button.cpp` has commented-out handlers for NoteOn/NoteOff events
-- `potentiometer.cpp` has conditional debug output:
-  ```cpp
-  // if (_pin == SLIDE_1)
-  // {
-  //     Serial.println(lastReading);
-  // }
-  ```
-- These indicate previous testing hooks that could be re-enabled for debugging
-
-## What Would Be Testable
-
-**Unit Test Candidates:**
-- `Potentiometer::hasChanged()` — pure function determining noise threshold (2 lines, easy to test)
-  ```cpp
-  bool Potentiometer::hasChanged(int newValue)
-  {
-      return (newValue >= (lastReading + ANALOG_NOISE) ||
-              newValue <= (lastReading - ANALOG_NOISE));
-  }
-  ```
-
-- `Button::ledStateToPWM()` — state-to-PWM mapping
-  ```cpp
-  int Button::ledStateToPWM(bool state)
-  {
-      return state ? 255 : 0;
-  }
-  ```
-
-**Integration Test Candidates:**
-- Button press → CC message emission: `Button::read()` with Bounce2 state change
-- Analog read → CC mapping: `Potentiometer::read()` with ADC simulation
-- CC receipt → LED update: `InputManager::handleControlChangeMessage()` → `Button::setLedState()`
-- Registry lookup: `ButtonRegistry::registerButton()` and CC-to-button mapping
-
-**Hardware-in-Loop Test Candidates:**
-- 16 grid buttons emit correct CC numbers (102–117) on press
-- 8 track buttons emit correct CC numbers (20–27) on press
-- 8 knobs emit CC values 14–15, 28–31, 118–119 with inversion
-- 8 sliders emit CC values 3, 9, 85–90 without inversion
-- LED brightness responds to CC 127 (on) / CC 0 (off) from DAW
-- Noise threshold prevents spurious CC messages from noisy analog readings
-
-## Mocking Considerations
-
-**Framework:** No mocking framework in use
-
-**What Would Need Mocking:**
-- Arduino hardware APIs: `pinMode()`, `digitalWrite()`, `analogRead()`
-- Bounce2 debouncer: `Bounce::attach()`, `Bounce::update()`, `Bounce::changed()`, `Bounce::fell()`
-- SoftPWM library: `SoftPWMSet()`, `SoftPWMBegin()`, `SoftPWMSetFadeTime()`
-- MIDI USB library: `usbMIDI.sendControlChange()`, `usbMIDI.read()`, `usbMIDI.setHandle*()`
-
-**Hardware Simulation Approach:**
-- Create mock implementations of Bounce2 and SoftPWM
-- Inject mock MIDI interface into InputManager
-- Example structure for a button test:
-  ```cpp
-  // Hypothetical test (not implemented)
-  void test_button_press_sends_cc() {
-      MockBounce mockButton;
-      mockButton.simulateFall(); // Press detected
-      button.read(); // Should send CC
-      assert(usbMIDI.lastCCNum == expectedCC);
-      assert(usbMIDI.lastVelocity == 127);
-  }
-  ```
-
-## Coverage Gaps
-
-**Untested Code:**
-- All of `Button::read()` — core button press logic (CC sending)
-- All of `Potentiometer::read()` — analog reading and MIDI sending
-- `InputManager::readAll()` — main loop orchestration
-- `InputManager::handleControlChangeMessage()` — DAW-to-LED feedback
-- `ButtonRegistry::registerButton()` — object lifecycle and map insertion
-- `InputManager::init()` — hardware initialization sequence
-- Hardware pin configuration in `pinDefines.h` — cannot test without hardware
-
-**Risk Level:** HIGH
-- Core MIDI communication path untested
-- Button state management untested
-- Analog filtering (noise threshold) untested but visible
-- LED feedback loop untested
-
-## Future Testing Path
-
-**If Unit Tests Were Added:**
-
-1. Extract pure functions from I/O-dependent code:
-   - Debounce logic
-   - Analog noise filtering (`hasChanged()`)
-   - Value mapping (10-bit ADC → 7-bit MIDI)
-   - State-to-PWM conversion
-
-2. Create test helpers:
-   - Mock Arduino environment (pins, digital I/O, analog I/O)
-   - Mock Bounce2 button state machine
-   - Mock SoftPWM brightness control
-   - Mock MIDI USB interface
-
-3. Write integration tests with mocks:
-   - Button press flow: hardware → debounce → CC emission
-   - Analog flow: ADC reading → noise filter → mapping → CC emission
-   - LED feedback: CC receipt → lookup → brightness update
-
-4. Establish CI/CD with PlatformIO:
-   ```bash
-   pio test --project-dir . --verbose
+   // In Potentiometer::read() — direct analogRead
+   int value = analogRead(_pin);
    ```
+
+3. **Complex state:** Pickup mode (fader state synchronization) and ripple animations involve timing and spatial calculations that would need mocking.
+
+## Recommended Testing Approach
+
+### Unit Tests (if refactored for testability)
+
+**Structure:**
+```cpp
+void test_potentiometer_absolute_mode() {
+    // Would test: relative vs absolute MIDI sending
+    // Requires: Mock analogRead(), mock usbMIDI
+}
+
+void test_fader_pickup_detection() {
+    // Would test: bank switch detection logic
+    // Requires: Mock Fader::read() to provide ADC values
+}
+
+void test_button_debounce_read() {
+    // Would test: button state transitions
+    // Requires: Mock Bounce2 library
+}
+```
+
+**Mocking Pattern (if implemented):**
+```cpp
+// Pseudo-example — would need implementation
+class MockMIDI {
+    static std::vector<ControlChangeMessage> sentCC;
+    static void sendControlChange(int cc, int value, int channel) {
+        sentCC.push_back({cc, value, channel});
+    }
+};
+
+// In test:
+MockMIDI::sentCC.clear();
+button.read();  // requires dependency injection of usbMIDI → MockMIDI
+ASSERT_EQUAL(MockMIDI::sentCC[0].cc, 102);
+```
+
+### Integration Tests (firmware on hardware)
+
+**Manual approach (current practice):**
+1. Upload firmware to Teensy 3.5
+2. Connect USB to computer running DAW (Logic Pro)
+3. Test physical hardware:
+   - Press buttons → verify LED feedback from DAW
+   - Move faders → verify Pitch Bend CC messages sent
+   - Turn knobs → verify relative MIDI CC messages sent
+   - Verify startup animation runs
+   - Verify MCU handshake completes
+
+**No automated integration test framework detected.**
+
+### Hardware Verification Checklist
+
+Current testing is manual hardware verification (from phase SUMMARY):
+- MCU handshake completes successfully
+- LED pickup mode blink works
+- Fader pickup synchronization works
+- Bank switching enters pickup mode
+- Startup animation cascades correctly
+- Button debouncing suppresses noise
+
+## Code Inspection for Testability Issues
+
+**Non-Testable Patterns (present in codebase):**
+
+1. **Global state in singletons:**
+   ```cpp
+   InputManager inputManager;  // global, single instance in main.cpp
+   MCUProtocol mcuProtocol;    // global singleton
+   ```
+   → Difficult to reset state between tests
+
+2. **Direct hardware calls in business logic:**
+   ```cpp
+   // Potentiometer::read() — cannot test without Teensy hardware
+   int value = analogRead(_pin);
+   ```
+
+3. **Timing-dependent behavior:**
+   ```cpp
+   // MCUButton::updateBlink() — depends on millis()
+   uint32_t now = millis();
+   if (now - _lastBlinkMs >= halfPeriod) {
+       // blink phase change
+   }
+   ```
+   → Requires mocking of `millis()` or hardware clock
+
+4. **Tightly-coupled objects:**
+   ```cpp
+   // Fader requires MCUButton* for blink control
+   void Fader::setChannelButton(MCUButton* btn);
+   ```
+   → Cannot test Fader pickup logic without MCUButton instance
+
+## Improving Testability (Future Recommendation)
+
+**Dependency Injection Pattern:**
+```cpp
+// Current: direct call
+int value = analogRead(_pin);
+
+// Better: inject ADC reader
+class Potentiometer {
+    ADCReader* _adc;  // inject
+    bool read() {
+        int value = _adc->read(_pin);  // mockable
+    }
+};
+```
+
+**Hardware Abstraction Layer:**
+```cpp
+// Create interface
+class MIDIOutput {
+    virtual void sendCC(int cc, int value, int channel) = 0;
+};
+
+// Real implementation
+class TeensyMIDI : public MIDIOutput {
+    void sendCC(int cc, int value, int channel) override {
+        usbMIDI.sendControlChange(cc, value, channel);
+    }
+};
+
+// Testable version
+class MockMIDI : public MIDIOutput {
+    void sendCC(int cc, int value, int channel) override {
+        sentMessages.push_back({cc, value, channel});
+    }
+};
+
+// Use in Button
+Button::Button(MIDIOutput* midi) : _midi(midi) { }
+bool Button::read() {
+    _midi->sendCC(_ccNum, 127, 1);  // now mockable
+}
+```
+
+## Static Verification
+
+**Manual Code Review:**
+- Design reviews use git commits and phase planning documents
+- No automated linting or static analysis tools detected
+- Manual verification of:
+  - MIDI CC number ranges (0-127 for controllers, 0-16383 for 14-bit)
+  - ADC mapping: 10-bit input (0-1023) → 7-bit MIDI (0-127) or 14-bit (0-16383)
+  - Pin configurations in `pinDefines.h`
+  - Debounce timing (20ms standard)
+
+## Testing Documentation
+
+**Design documents by phase:**
+- `CONTEXT.md` — MCU protocol design decisions
+- Phase SUMMARYs in `.planning/phases/` — manual test results
+- Comments in code (e.g., `PICK-01:`, `MCU-06:`) — design rationale
+
+**No automated test documentation generated.**
+
+## Notes on Embedded Testing Challenges
+
+This codebase represents a typical embedded firmware project where:
+
+1. **Hardware coupling is unavoidable** — testing must happen on real Teensy 3.5 or comprehensive mocking
+2. **Timing is critical** — blink animations, debounce windows, ripple effects all time-dependent
+3. **MIDI protocol** — USB MIDI communication requires actual USB connection or protocol simulation
+4. **Resource constraints** — Arduino framework has limited memory for test harnesses
+
+**Recommended test strategy for future phases:**
+- Focus on hardware verification (manual testing on Teensy) for critical features
+- Add debug serial output to trace state during testing (currently commented out)
+- Use compile-time asserts for constant validation (`static_assert`)
+- Document manual test procedures in phase planning instead of automated tests
 
 ---
 
-*Testing analysis: 2026-02-20*
+*Testing analysis: 2026-03-02*

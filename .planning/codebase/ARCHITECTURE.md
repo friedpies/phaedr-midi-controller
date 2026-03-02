@@ -1,170 +1,173 @@
 # Architecture
 
-**Analysis Date:** 2026-02-20
+**Analysis Date:** 2026-03-02
 
 ## Pattern Overview
 
-**Overall:** Arduino/Embedded Polling Architecture with Event Delegation
+**Overall:** Arduino firmware using a hardware abstraction layer (HAL) pattern with event-driven state machines. The firmware is a unidirectional controller that sends input state to Logic Pro DAW and receives feedback via MIDI to update LED displays.
 
 **Key Characteristics:**
-- Single-threaded polling loop driven by Arduino's `setup()`/`loop()` pattern
-- Hardware abstraction through input abstraction layers (Button, Potentiometer)
-- Bidirectional MIDI communication: device → DAW (CC messages), DAW → device (LED feedback via CC handlers)
-- Registry pattern for dynamic CC-to-Button mapping enabling DAW-driven LED state updates
-- Blocking I/O with debouncing and noise filtering built into input classes
+- Polled input reading (buttons, knobs, faders) in main loop with debouncing
+- USB MIDI bidirectional communication for command/feedback
+- MCU protocol handshake for Logic Pro recognition (SysEx-based)
+- Asynchronous LED animation engine (ripple effect) running concurrently with input
+- Pickup mode and bank switching for fader synchronization with DAW state
+- Stateful blink FSM for channel strip button feedback
 
 ## Layers
 
-**Hardware Abstraction (Input Drivers):**
-- Purpose: Encapsulate physical input reading and state management
-- Location: `src/button.h/cpp`, `src/potentiometer.h/cpp`
-- Contains: Button (debounced switch + LED pair), Potentiometer (analog fader/knob with noise filtering)
-- Depends on: Arduino core, Bounce2 (debouncing), SoftPWM (LED PWM control)
-- Used by: InputManager
+**Hardware Abstraction Layer (Input Devices):**
+- Purpose: Encapsulate physical input reading and filtering
+- Location: `src/button.h/cpp`, `src/mcuButton.h/cpp`, `src/potentiometer.h/cpp`, `src/fader.h/cpp`
+- Contains: `Button` (legacy), `MCUButton` (MCU protocol), `Potentiometer` (knobs/sliders), `Fader` (pitch bend with pickup mode)
+- Depends on: Arduino core, Bounce2 (debouncing), SoftPWM (LED control)
+- Used by: `InputManager`
 
-**Input Orchestration:**
-- Purpose: Central coordinator for all 40 physical inputs (16 grid buttons, 8 track buttons, 8 knobs, 8 sliders)
+**Input Management & Control Layer:**
+- Purpose: Central orchestrator for all inputs; polls hardware, manages state machines, routes MIDI output
 - Location: `src/inputManager.h/cpp`
-- Contains: Input arrays, initialization logic, CC message routing from DAW
-- Depends on: Button, Potentiometer, ButtonRegistry, SoftPWM
-- Used by: main.cpp
+- Contains: Input arrays (grid buttons, track buttons, knobs, faders), ripple animation FSM, track selection state, NoteRegistry
+- Depends on: All HAL input classes, `NoteRegistry`, `MCUButton`
+- Used by: `main.cpp`
 
-**Registry & Lookup (Bidirectional Mapping):**
-- Purpose: Maps MIDI CC numbers to Button objects, enabling DAW-to-device LED feedback
-- Location: `src/buttonRegistry.h/cpp`
-- Contains: std::map<int, Button*> for O(1) CC-to-Button lookup
-- Depends on: Button
-- Used by: InputManager
+**Protocol & Feedback Layer:**
+- Purpose: Handles MCU handshake, maps incoming MIDI to hardware feedback
+- Location: `src/mcuProtocol.h/cpp`, `src/noteRegistry.h/cpp`, `src/mcuConfig.h`
+- Contains: MCU SysEx handshake state machine, note-to-button mapping registry
+- Depends on: Arduino core, `MCUButton`
+- Used by: `main.cpp`, `InputManager`
 
-**Configuration & Pin Definitions:**
-- Purpose: Hardware pin constants for all switches, LEDs, and analog inputs
-- Location: `src/pinDefines.h`
-- Contains: Teensy 3.5 pin assignments (digital, analog, PWM-capable pins)
-- Depends on: None
-- Used by: Button, Potentiometer, InputManager
-
-**Application Entry Point:**
-- Purpose: USB MIDI transport setup, USB-to-firmware message routing
+**Entry Point & Main Loop:**
+- Purpose: Initialize firmware, register MIDI handlers, orchestrate update cycle
 - Location: `src/main.cpp`
-- Contains: setup() initialization, loop() orchestration, USB MIDI handler registration
-- Depends on: InputManager, Arduino MIDIUSB, platformio build system
-- Used by: PlatformIO/Teensy bootloader
+- Contains: Startup animation, MIDI callback handlers (SysEx, NoteOn/Off, PitchBend), main loop orchestration
+- Depends on: All other modules
+- Used by: Arduino runtime
 
 ## Data Flow
 
-**Hardware Input → DAW (User Pressing Button/Moving Fader):**
+**Input → MIDI Output Path:**
 
-1. Main loop calls `inputManager.readAll()` each iteration (non-blocking)
-2. InputManager iterates all button/potentiometer arrays, calling `.read()` on each
-3. Button.read(): Bounce2 debounces switch, detects falling edge (press), toggles internal LED state
-4. Button sends CC message via `usbMIDI.sendControlChange(ccNum, 127 or 0, channel)` to DAW
-5. Potentiometer.read(): Reads analog value, compares against last reading with 3-point noise threshold
-6. On change, maps 10-bit ADC (0–1023) to 7-bit MIDI (0–127) and sends CC message
+1. `loop()` calls `inputManager.readAll()`
+2. For each button (grid, track):
+   - `MCUButton::read()` polls Bounce2 debouncer
+   - On press (fell), sends `NoteOn(noteNum, 127)` + `NoteOff(noteNum, 0)` to DAW
+3. For each knob:
+   - `Potentiometer::read()` samples ADC, computes relative delta (MCU VPot format)
+   - Sends relative CC (0x01-0x3F for CW, 0x41-0x7F for CCW) on CC 16-23
+4. For each fader:
+   - `Fader::read()` samples ADC, maps to 14-bit value
+   - In SYNCED state: sends `PitchBend` on MIDI channels 1-8
+   - In OUT_OF_SYNC (bank switch): waits for crossover, optionally blinks channel button
 
-**DAW Feedback → Hardware (DAW Updating LED):**
+**MIDI Feedback → LED Update Path:**
 
-1. DAW sends CC message back to device (e.g., pressing Ableton clip lights LED)
-2. Main loop calls `usbMIDI.read()` each iteration (non-blocking)
-3. USB handler callback `handleControlChangeMessage()` invoked by usbMIDI
-4. Handler delegates to `inputManager.handleControlChangeMessage()`
-5. InputManager checks if CC number maps to a button (102–117 grid, 20–27 tracks)
-6. Looks up Button* from `buttonRegistry.ccNumToButton[ccNum]`
-7. Calls `button.setLedState(velocity == 127 ? HIGH : LOW)`
-8. Button updates SoftPWM value (0 or 255) to physically change LED brightness
+1. `usbMIDI.read()` in `loop()` dispatches incoming MIDI to registered handlers
+2. `handleNoteOn()` / `handleNoteOff()` → `inputManager.handleNoteMessage()`
+3. `inputManager` looks up note in `noteRegistry` → finds corresponding `MCUButton`
+4. `MCUButton::setLedState(velocity)` sets SoftPWM brightness (0=off, 127=on, 1=blink FSM)
+5. `loop()` calls `inputManager.updateBlinks()` to advance all blink FSMs every iteration
+
+**Fader Feedback → Pickup Mode Path:**
+
+1. `handlePitchBend()` receives 14-bit fader position from Logic on channels 1-8
+2. Routes to `Fader::setDawValue()`
+3. `Fader` detects bank switch (DAW value far from physical position)
+4. If bank switch detected, enters OUT_OF_SYNC state
+5. On next `Fader::read()`, lazy-reveals blink on channel button
+6. Blink frequency encodes distance to target (600ms far, 200ms close)
+7. On crossover, `Fader` transitions to SYNCED, stops blink
+
+**Pre-Handshake Ripple Animation:**
+
+1. Before MCU handshake, `loop()` calls `inputManager.readIdle()` (debounce only)
+2. `readIdle()` calls `poll()` on all buttons (no MIDI output, just debounce)
+3. On press, triggers `triggerRipple(originIdx)` with LED position map
+4. Computes Euclidean distance from origin to all 24 LEDs
+5. Stores pre-computed brightness falloff curve
+6. `loop()` calls `inputManager.updateRipple()` every iteration
+7. Ripple timing: distance-based delay, then hold, then fade (all non-blocking, millis-based)
 
 **State Management:**
 
-- **Button state:** Each Button instance holds `ledState` (boolean). Toggle on press (hardware), overwrite on DAW feedback (software).
-- **Potentiometer state:** Each Potentiometer holds `lastReading` (int 0–1023). Compared against new reading with 3-point hysteresis to filter noise.
-- **Global state:** InputManager owns all input instances in arrays (grid, track buttons, knobs, sliders).
-- **Transient state:** No persistent state written to EEPROM; all state is volatile (resets on power cycle).
+- **Button State:** Debounce + LED state only (no toggle—Logic Pro drives LED state via feedback)
+- **Fader State:** Last physical reading, last DAW value, pickup mode flag (SYNCED/OUT_OF_SYNC), blink reveal flag
+- **Track Selection:** `InputManager._selectedTrack` tracks which fader/knob owns input focus
+- **Ripple Animation:** Distance map, brightness map, timing, lit/faded flags per LED
+- **MCU Handshake:** Completion flag, retry timer (5s intervals)
+- **Blink FSM:** Per-button blink period, phase, last update time
 
 ## Key Abstractions
 
-**Button (Hardware-Software Bridge):**
-- Purpose: Represents a physical momentary switch + LED pair with debouncing and bidirectional state
-- Examples: `src/button.h/cpp`, instantiated 24 times in InputManager (16 grid + 8 track buttons)
-- Pattern:
-  - Constructor stores pin numbers (switch, LED), CC number, debounce time
-  - `init()` sets up Bounce2 and SoftPWM
-  - `read()` polls Bounce2, detects falling edge, sends CC on press
-  - `setLedState()` receives CC feedback from DAW and updates PWM output
-  - Maintains internal toggle state (`ledState`) that flips on hardware press but is overwritten on DAW feedback
+**MCUButton (Multi-Role Button):**
+- Purpose: Encapsulate a physical button + optional LED with MCU protocol semantics
+- Examples: `gridButtons[0-15]` (K1-K16), `trackButtons[0-7]` (P1-P8)
+- Pattern: Dual-mode read (`read()` for MIDI output via note bang, `poll()` for debounce-only); LED state set via `setLedState(velocity)` from NoteRegistry feedback; blink FSM with non-blocking millis-based update
 
-**Potentiometer (Analog Input with Filtering):**
-- Purpose: Reads analog potentiometer/slider with noise rejection and CC mapping
-- Examples: `src/potentiometer.h/cpp`, instantiated 16 times (8 knobs, 8 sliders)
-- Pattern:
-  - Constructor stores analog pin, CC number, optional inversion flag (knobs are inverted)
-  - `read()` polls analog input, applies inversion, checks 3-point noise threshold
-  - On change, maps 10-bit ADC to 7-bit MIDI using Arduino `map()` function
-  - Sends CC message; relies on DAW to display/update parameter
+**Fader (MCU Pitch Bend with Pickup):**
+- Purpose: Sync hardware fader with DAW value during bank switches, avoid sudden jumps
+- Examples: `trackFaders[0-7]`
+- Pattern: Two-state machine (SYNCED/OUT_OF_SYNC); lazy blink reveal on first movement; crossover detection with deadband + rail edge cases; distance-encoded blink period; automatic transition back to SYNCED on crossover
 
-**ButtonRegistry (CC Lookup Table):**
-- Purpose: Fast O(1) lookup of Button objects by CC number for DAW feedback routing
-- Examples: `src/buttonRegistry.h/cpp`
-- Pattern:
-  - `registerButton()` factory method creates Button on heap, stores pointer in std::map
-  - Enables InputManager to dynamically discover which button owns a given CC number
-  - Single instance owned by InputManager
+**Potentiometer (Dual-Mode Analog Input):**
+- Purpose: Read analog knob/slider, output either absolute (7-bit MIDI) or relative (MCU VPot format)
+- Examples: `trackKnobs[0-7]` (relative VPot CC 16-23), legacy sliders (absolute)
+- Pattern: Threshold-based change detection (ANALOG_NOISE=3), supports inversion (used by knobs), accumulates relative deltas to handle coarse ADC resolution
 
-**InputManager (Orchestrator):**
-- Purpose: Central hub for input polling, initialization, and message routing
-- Examples: `src/inputManager.h/cpp`
-- Pattern:
-  - Owns arrays of all inputs (16 grid buttons, 8 track buttons, 8 knobs, 8 sliders)
-  - Initializes SoftPWM and all Button/Potentiometer instances
-  - `readAll()` iterates arrays, calls `.read()` on each (no branching, simple loop)
-  - `handleControlChangeMessage()` routes incoming CC from DAW to ButtonRegistry lookup
+**NoteRegistry (MIDI Note → Button Mapping):**
+- Purpose: Route incoming NoteOn/Off from Logic to correct hardware button for LED feedback
+- Examples: Logic sends note 24 (SELECT Ch1) → routes to P1 button → updates LED
+- Pattern: `std::map<uint8_t, MCUButton*>` registry; fast O(log n) lookup on every MIDI message
+
+**RippleState (Pre-Handshake Animation):**
+- Purpose: Encapsulate 2D ripple wave animation state with distance-based timing
+- Pattern: Pre-computed distance/brightness maps (computed once at trigger), non-blocking state tracking (lit/faded flags), time-gated LED updates using `millis()` delta
 
 ## Entry Points
 
-**setup():**
-- Location: `src/main.cpp` (Arduino standard)
-- Triggers: Called once by Teensy bootloader after power-on/reset
-- Responsibilities:
-  1. Create global InputManager instance
-  2. Call `inputManager.init()` to set up all pins, SoftPWM, Bounce2
-  3. Register USB MIDI callbacks: `setHandleControlChange()`, `setHandleStart()`, `setHandleClock()`, `setHandleStop()`
+**main() / setup():**
+- Location: `src/main.cpp:78-91`
+- Triggers: Arduino runtime calls setup() once on power-on
+- Responsibilities: Initialize InputManager (which init SoftPWM), play startup animation, register MIDI callbacks with usbMIDI, start MCU protocol handshake
 
 **loop():**
-- Location: `src/main.cpp` (Arduino standard)
-- Triggers: Called repeatedly by Teensy bootloader at full speed (~1000 Hz on Teensy 3.5)
-- Responsibilities:
-  1. Poll all hardware inputs: `inputManager.readAll()` (reads buttons/knobs/sliders)
-  2. Service USB MIDI: `usbMIDI.read()` (checks for incoming CC feedback, invokes callbacks)
-  3. Return immediately; blocks for ~5–10 µs total (all reads are non-blocking)
+- Location: `src/main.cpp:93-104`
+- Triggers: Arduino runtime calls continuously
+- Responsibilities: Poll all inputs via `inputManager.readAll()` or `inputManager.readIdle()`, update blink FSMs, process MIDI messages, advance MCU handshake retry timer
 
-**main.cpp Callback Handlers:**
-- `handleControlChangeMessage(byte channel, byte ccNum, byte velocity)`: Routes DAW CC feedback to InputManager
-- `handleStart()`, `handleClock()`, `handleStop()`: Placeholders for transport control (currently stub implementations)
+**MIDI Callbacks:**
+- `handleNoteOn()` / `handleNoteOff()`: Route LED feedback to buttons
+- `handlePitchBend()`: Route fader DAW value for pickup mode
+- `handleSysEx()`: Route to MCU protocol handshake state machine
+- Location: `src/main.cpp:49-76`
+- Triggers: Teensyduino USB MIDI driver dispatches on message arrival
+- Responsibilities: Forward to appropriate InputManager or MCUProtocol method
 
 ## Error Handling
 
-**Strategy:** No explicit error handling. Firmware assumes hardware is always responsive.
+**Strategy:** No explicit error handling beyond assertions. Firmware runs to completion or crashes (soft reset via watchdog). Defensive programming used to avoid crashes:
+- Range checks on MIDI channel (1-8)
+- Sentinel states for button/fader (buttonPin < 0 skips initialization)
+- Null checks on button pointers in NoteRegistry
 
 **Patterns:**
-
-- **Debounce timeout:** Bounce2 enforces 20 ms debounce interval; if switch bounces during interval, extra edges are ignored (safe).
-- **Analog noise:** Potentiometer uses 3-point hysteresis; only sends CC if new reading differs by ≥3 points from last, filtering ADC noise inherently.
-- **CC out-of-bounds:** InputManager only updates LEDs for CC 102–117 (grid) and 20–27 (track); other CCs are silently ignored.
-- **Missing CC in registry:** If DAW sends CC for a button that wasn't registered, lookup will fail (UB in current code—potential bug).
-- **USB disconnection:** Not handled; firmware continues polling, messages are dropped by Teensy USB stack.
+- Early return on invalid inputs (e.g., `if (faderIdx < 0 || faderIdx >= NUM_TRACKS) return;`)
+- No-op callbacks on unconfigured devices (e.g., `if (_buttonPin < 0) return;`)
+- Safe defaults (e.g., ripple stops if `elapsed` exceeds expected range)
 
 ## Cross-Cutting Concerns
 
-**Logging:**
-- Serial console output via `Serial.println()` in main.cpp callbacks (disabled by default for performance)
-- No persistent logging; used for debugging only during development
+**Logging:** Serial output disabled in production (comments in `button.cpp` show debug locations); can be re-enabled for troubleshooting via `Serial.println()` and `pio device monitor`
 
 **Validation:**
-- Minimal validation. MIDI values assumed in range (CC 0–127, velocity 0–127, channel 1).
-- Analog reads assumed to stay within 0–1023 (would fault if not, but ADC always returns valid 10-bit).
-- Button state toggles are unconstrained; no null-safety checks on ButtonRegistry pointers.
+- MIDI channel range: Logic sends pitch bend on channels 1-8; firmware validates in `handlePitchBend()`
+- Note range: No validation (relies on correct NoteRegistry registration)
+- CC range: No validation (relies on Potentiometer CC numbers)
 
-**Authentication:**
-- Not applicable. Teensy USB MIDI device is always trusted (hardwired, no remote auth).
+**Authentication:** MCU handshake includes static challenge bytes; validation currently disabled (`validateChallengeResponse()` always returns true) due to uncertainty about Logic's response format. Handshake completes immediately (`_handshakeComplete = true` in `begin()`) without waiting for SysEx reply.
+
+**Timing & Concurrency:** All timing is cooperative (millis-based, no interrupts). MIDI callbacks and loop() execute in single thread (no race conditions). Ripple animation uses elapsed time deltas, not blocking delays, to avoid stalling main loop.
 
 ---
 
-*Architecture analysis: 2026-02-20*
+*Architecture analysis: 2026-03-02*

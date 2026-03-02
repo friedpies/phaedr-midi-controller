@@ -1,182 +1,193 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-02-20
+**Analysis Date:** 2026-03-02
 
 ## Tech Debt
 
-**Incomplete variable naming convention:**
-- Issue: Inconsistent use of underscore prefix for member variables. The TODO comment in `src/button.cpp:40` indicates `ledState` should follow the `_ledState` pattern used elsewhere in the class.
+**Inconsistent member variable naming in Button class:**
+- Issue: `ledState` lacks underscore prefix while other members use `_buttonPin`, `_ledPin`, `_ccNum`, `_debounceTime`. Creates inconsistent internal API.
+- Files: `src/button.h` (line 29), `src/button.cpp` (lines 18, 40-41)
+- Impact: Confuses convention for future maintenance; inconsistent with class design pattern elsewhere in codebase.
+- Fix approach: Rename `ledState` → `_ledState` throughout Button class (trivial refactor, affects 5 locations).
+
+**Legacy Button class unused in favor of MCUButton:**
+- Issue: Original `Button` class (`src/button.h/cpp`) implements CC-based note sending but is completely unused — all button input now goes through `MCUButton` class which uses MCU Note Bang protocol.
 - Files: `src/button.h`, `src/button.cpp`
-- Impact: Reduces code consistency and makes it harder to distinguish member variables from local variables at a glance.
-- Fix approach: Rename `ledState` to `_ledState` throughout Button class and update all references.
+- Impact: Dead code adds cognitive load during maintenance; developer might incorrectly assume Button is active.
+- Fix approach: Delete Button class entirely; update any imports/comments referencing it. Verify no references remain in InputManager or main.cpp (they already use MCUButton).
 
-**Potentiometer::init() is empty:**
-- Issue: `Potentiometer::init()` in `src/potentiometer.cpp` contains no initialization logic, though the method is declared.
-- Files: `src/potentiometer.h`, `src/potentiometer.cpp`
-- Impact: Suggests incomplete implementation. If pin mode or ADC configuration is needed, it's missing.
-- Fix approach: Either remove the declaration/call to `init()` if not needed, or implement proper analog pin initialization (pinMode, ADC settings).
+**Pin 13 hardware conflict documented but not abstracted:**
+- Issue: `pinDefines.h` line 4 notes "K1_SW 13 // MUST REMOVE ONBOARD LED FOR THIS TO WORK (WORKS FINE)" — hardware design flaw (pin 13 has onboard LED that interferes with INPUT_PULLUP) is worked around but not encapsulated.
+- Files: `src/pinDefines.h` (line 4)
+- Impact: Hardware constraint visible only in comments; future pin refactors might forget this constraint and break K1 button. No runtime safeguard.
+- Fix approach: Add preprocessor check or runtime validation that K1_SW == 13 and enforce documentation in build output.
 
-**Unused event handlers:**
-- Issue: `handleStart()` and `handleClock()` in `src/main.cpp` (lines 33-40) only print debug messages and don't implement transport control logic.
-- Files: `src/main.cpp`
-- Impact: Transport synchronization features are non-functional; transport clock pulses and start/stop signals from the DAW are logged but ignored.
-- Fix approach: Implement actual transport control handlers or remove them if not needed.
+**K15 and K16 pins connected to USB native ports (hardware design issue):**
+- Issue: `pinDefines.h` lines 22-23 document "K15_SW A25 // BAD SCHEM UD+" and "K16_SW A26 // HOOKED UP TO USB NATIVE PORTS, DUMB UD-" — indicates schematic errors that work by accident.
+- Files: `src/pinDefines.h` (lines 22-23)
+- Impact: Fragile hardware coupling; any USB configuration change could break these buttons. Non-obvious to future maintainers.
+- Fix approach: Document in project README as known hardware limitation; consider remapping in Phase 3 if pins available, or note as unfixable without PCB respin.
 
-**Commented-out code in main.cpp:**
-- Issue: Lines 18-26 in `src/main.cpp` contain commented Note-On/Note-Off handler stubs with incomplete comments.
-- Files: `src/main.cpp`
-- Impact: Dead code clutters the file and suggests incomplete feature exploration. Unclear intent.
-- Fix approach: Remove or commit to implementing MIDI note messages.
-
-**Commented-out fade time configuration:**
-- Issue: Lines 6-7 in `src/inputManager.cpp` have commented SoftPWMSetFadeTime calls with two different values (100ms and 500ms).
-- Files: `src/inputManager.cpp`
-- Impact: LED fade timing is inconsistent across buttons. Current behavior uses default SoftPWM fade time (125ms per `src/button.cpp:8`), not the developer's intentions.
-- Fix approach: Uncomment one fade time or establish a consistent LED fade strategy across all buttons.
-
-**Inactive debug Serial output:**
-- Issue: `handleControlChangeMessage()` in `src/main.cpp:29` prints "CONTROL CHANGE" to Serial on every CC message received.
-- Files: `src/main.cpp`
-- Impact: Excessive Serial output may impact timing performance in tight feedback loops between DAW and hardware. No way to disable debug output in production.
-- Fix approach: Either remove debug prints or make them configurable (e.g., `#define DEBUG_CC 0`).
+**USB power budget calculation relies on static LED_MAX_BRIGHTNESS:**
+- Issue: `pinDefines.h` line 81 documents LED power budget: "24 LEDs × ~20mA peak × (LED_MAX_BRIGHTNESS/255) duty + ~150mA Teensy <= 500mA" at LED_MAX_BRIGHTNESS=180. If LED_MAX_BRIGHTNESS is changed, power budget is not automatically validated.
+- Files: `src/pinDefines.h` (lines 79-81)
+- Impact: Exceeding USB 500mA limit could cause brownouts, resets, or enumeration failures. No runtime check if someone raises LED_MAX_BRIGHTNESS.
+- Fix approach: Add compile-time assertion checking power budget based on LED_MAX_BRIGHTNESS; document minimum headroom requirement in comments.
 
 ## Known Bugs
 
-**Inverted MIDI CC values for button press detection:**
-- Bug description: Button logic is inverted — when `ledState == LOW`, the code sends CC 127 (on); when `ledState == HIGH`, it sends CC 0 (off).
-- Symptoms: Buttons send opposite values from what the visual state suggests. LED state `LOW` → sends on message (127), LED state `HIGH` → sends off message (0).
-- Files: `src/button.cpp:20-26`
-- Trigger: Any button press toggles `ledState` and sends the inverted CC value.
-- Workaround: DAW must invert incoming button CC values to interpret them correctly, or user expects inverted behavior.
-
-**Unsafe pointer dereferencing in InputManager initialization:**
-- Bug description: In `src/inputManager.h:22-38` and `src/inputManager.h:40-48`, Button arrays are initialized by dereferencing pointers returned from `registerButton()`. The dereference happens at compile-time, but the underlying pointers could become invalid if ButtonRegistry is destroyed before InputManager.
-- Symptoms: Memory corruption or segfault if ButtonRegistry is deallocated before the button arrays (unlikely in practice due to static initialization order, but fragile).
-- Files: `src/inputManager.h:22-48`, `src/buttonRegistry.cpp`
-- Trigger: Occurs at initialization; would only manifest if ButtonRegistry is dynamically destroyed.
-- Workaround: Store Button pointers directly instead of dereferencing at initialization.
-
-**setLedState uses copy instead of reference:**
-- Bug description: In `src/inputManager.cpp:25`, a Button is created as a copy: `Button button = *(buttonRegistry.ccNumToButton[ccNum]);`. This creates a temporary copy, so calling `setLedState()` on the copy does not affect the original Button object.
-- Symptoms: LEDs don't update in response to incoming CC messages from the DAW, even though the function is called.
-- Files: `src/inputManager.cpp:25-26`
-- Trigger: When DAW sends a CC message to any button, the LED should update but doesn't.
-- Workaround: None. This is a critical bug in DAW feedback. LEDs will only update on local button presses.
+**Button state logic inverted — LED off sends CC 127, LED on sends CC 0:**
+- Symptoms: When grid/track buttons are pressed, the logic inverts: `if (ledState == LOW) sendControlChange(..., 127, ...)` (line 20-26 in button.cpp). This means pressing a button sends "on" (127) when LED state is off, and "off" (0) when LED state is on — backwards.
+- Files: `src/button.cpp` (lines 18-26)
+- Trigger: Press any grid button (K1-K16) or track button (P1-P8) that still uses old Button class (if any remain in legacy code).
+- Impact: Likely none in current build since Button class is unused; MCUButton correctly implements Note Bang without this bug. However, if Button class is ever re-enabled, this will silently send inverted commands.
+- Workaround: None currently needed since Button is unused.
 
 ## Security Considerations
 
-**No input validation on MIDI CC numbers:**
-- Risk: The `handleControlChangeMessage()` function checks channel (line 21) but only validates CC numbers for expected ranges. Invalid CC numbers could be accessed outside the grid/track button ranges, potentially accessing uninitialized memory or causing undefined behavior.
-- Files: `src/inputManager.cpp:19-29`
-- Current mitigation: Hardcoded CC ranges (102-117, 20-27) are only accessed if they match. Direct `map` access without bounds checking: `buttonRegistry.ccNumToButton[ccNum]` could throw `std::out_of_range` or access non-existent entries.
-- Recommendations: Add explicit validation that `ccNum` exists in `ccNumToButton` map before dereferencing. Use `find()` or `count()` to check membership first.
+**MCU SysEx challenge-response validation is stubbed (intentional):**
+- Risk: `mcuProtocol.cpp` lines 110-117 show `validateChallengeResponse()` always returns true without validating the 4-byte response from Logic. Any device sending the correct SysEx header can impersonate the controller.
+- Files: `src/mcuProtocol.cpp` (lines 110-117)
+- Current mitigation: USB-only connection to trusted DAW; not exposed over network. Code comments note this is intentional DIY controller design choice.
+- Recommendations: This is acceptable for embedded hardware in a personal music production setup. If controller is ever exposed to untrusted hosts (e.g., networked MIDI), implement actual challenge validation (XOR, checksum, or HMAC over challenge bytes).
 
-**No protection against button index out-of-bounds in arrays:**
-- Risk: Button and Potentiometer arrays are created in InputManager header file (static size) but there's no runtime validation that loop counters stay in bounds.
-- Files: `src/inputManager.cpp:9-42`
-- Current mitigation: Loop limits are hardcoded (`NUM_GRID_BUTTONS`, `NUM_TRACKS`) and match array sizes, so bounds are correct at compile-time.
-- Recommendations: Consider using standard containers (std::array, std::vector) with bounds-checked access if behavior changes in future.
+**No input validation on MIDI CC or pitch bend values:**
+- Risk: `inputManager.cpp` `setFaderDawValue()` (line 223-229) accepts pitch bend without range checking; assumes 14-bit value 0-16383. Malformed MIDI could cause out-of-bounds array access or integer overflow.
+- Files: `src/inputManager.cpp` (lines 223-229), `src/fader.cpp` (lines 31-51, 53-115)
+- Current mitigation: Teensy USB stack validates MIDI frame structure; only well-formed messages reach callbacks. However, no defensive checks in firmware.
+- Recommendations: Add assertions in `setFaderDawValue()` and `Fader::setDawValue()` to clamp values to [0, 16383]; add boundary checks in fader crossover logic (lines 88-94 in fader.cpp).
 
 ## Performance Bottlenecks
 
-**Excessive MIDI message transmission from analog inputs:**
-- Problem: Every call to `Potentiometer::read()` checks for a change using a 3-unit threshold (ANALOG_NOISE), but sends a CC message unconditionally if the threshold is exceeded. No debouncing or rate-limiting on analog inputs.
-- Files: `src/potentiometer.cpp:7-24`, `src/potentiometer.h:18`
-- Cause: ADC fluctuations near the threshold cause frequent CC messages even when the physical knob/slider hasn't moved. Teensy 3.5 running at ~72MHz should handle this, but unnecessary USB traffic wastes bandwidth and may lag the DAW feedback loop.
-- Improvement path: Implement hysteresis (different thresholds for rising/falling) or aggregate changes into a ring buffer and only send if the average change exceeds a larger threshold. Consider debouncing potentiometers like buttons.
+**2D Euclidean distance calculation on every ripple update:**
+- Problem: `inputManager.cpp` `updateRipple()` (lines 152-177) calls `millis()` and checks 24 LED states every loop iteration. For each of the 24 LEDs, distance was pre-computed at trigger time (lines 127-137), but no caching of which LEDs have already faded.
+- Files: `src/inputManager.cpp` (lines 123-177)
+- Cause: Ripple uses `_ripple.faded[24]` array to track completion, but `anyLeft` loop still scans all 24 even if all are faded. Not a bottleneck on 8-bit embedded systems but inefficient pattern.
+- Improvement path: Current performance is acceptable; ripple animation only runs during idle handshake phase. No optimization needed for Phase 2-4 (readAll() dominates once handshake completes).
 
-**SoftPWM overhead without clear benefit:**
-- Problem: All button LEDs are controlled via SoftPWM with 125ms fade time, even though the fade is not visible at normal interaction speeds and consumes CPU cycles on a software PWM library instead of hardware PWM.
-- Files: `src/button.cpp:8`, `src/button.h`
-- Cause: SoftPWM is easier to use than configuring hardware PWM pins, but it's less efficient. Teensy 3.5 has hardware PWM available on many pins.
-- Improvement path: Use hardware PWM for LED brightness control, or remove the fade effect if 0/255 brightness is sufficient. Measure CPU impact if fading is important for UX.
-
-**InputManager::readAll() always polls all inputs:**
-- Problem: Every main loop iteration calls `readAll()` which iterates all 16 grid buttons, 8 track buttons, 8 knobs, and 8 sliders (40 `read()` calls). Even if no input has changed, all are checked.
-- Files: `src/inputManager.cpp:31-42`
-- Cause: Naive full polling strategy. Reasonable for this hardware count, but scales poorly if inputs are added.
-- Improvement path: If inputs are added, consider interrupt-driven input or at least skipping reads for inputs that haven't changed recently.
+**SoftPWM library overhead — all 22 LED channels updated every loop:**
+- Problem: `SoftPWM.cpp` in vendored `lib/SoftPWM/` implements software PWM for all active channels on every loop iteration. Firmware polls all 16 grid + 8 track buttons (readAll ~160+ function calls) AND advances all LED PWM timers (~22 channels). On 96 MHz Teensy 3.5, this is acceptable but leaves little margin.
+- Files: `lib/SoftPWM/` (entire library), `src/inputManager.cpp` (readAll), `src/main.cpp` (loop)
+- Cause: Software PWM emulated via timer interrupts; no hardware PWM pin available for all 24 LED channels on Teensy 3.5 (limited to 9 hardware PWM outputs). Vendored library configured with SOFTPWM_MAXCHANNELS=22 per platformio.ini line 18.
+- Improvement path: Current 22-channel SoftPWM is necessary given pin count. If firmware runs out of CPU time in future phases (beat chaser animation, etc.), profile with logic analyzer to identify bottlenecks. Teensy 3.5 @ 96MHz should comfortably handle this.
 
 ## Fragile Areas
 
-**Button class state synchronization with DAW:**
-- Files: `src/button.h`, `src/button.cpp`, `src/inputManager.cpp`
-- Why fragile: Button has local `ledState` that can be set from two sources: local press (toggles state) and DAW feedback (sets state directly). If the user presses a button while the DAW is sending the same CC, the state may desynchronize. No bidirectional state verification exists.
-- Safe modification: Before adding features like LED blink patterns or different feedback modes, establish a clear state ownership model: does the button always reflect the DAW state, or does it maintain local toggle state?
-- Test coverage: No unit tests. Manual testing required to verify LED state matches button presses.
+**Fader pickup state machine has subtle crossover edge cases:**
+- Files: `src/fader.cpp` (lines 24-115), `src/fader.h` (lines 28, 50-57)
+- Why fragile: Pickup FSM transitions between OUT_OF_SYNC and SYNCED based on deadband crossing (line 96 in fader.cpp). The logic compares against `_lastFader14bit` (physical position from ADC read) vs `_dawValue14bit` (incoming pitch bend from DAW). If either source noises, false triggering can occur.
+  - Lines 88-94 implement boundary-edge case handling (both at rail → immediate pickup).
+  - Lines 45-48 implement bank switch detection by comparing against physical position, not previous DAW value.
+  - Comments at lines 35-48 document why this approach was chosen, but the implementation is delicate.
+- Safe modification: Never change PICKUP_DEADBAND, BANK_SWITCH_THRESHOLD, or FADER_NOISE_THRESHOLD without re-testing with Logic bank switches (Phase 2 verification already done). Do not assume these values are tuned for all DAWs or MIDI configurations; different MIDI interfaces may have different noise profiles.
+- Test coverage: Phase 2 plans 02-02-PLAN.md and 02-03-PLAN.md include hardware verification of crossover detection. Gaps: no unit tests; verification is manual (moving physical faders and checking Logic fader position).
 
-**ButtonRegistry pointer lifetime:**
-- Files: `src/buttonRegistry.h`, `src/buttonRegistry.cpp`, `src/inputManager.h`
-- Why fragile: `ButtonRegistry` allocates Button objects with `new` but never deletes them. The InputManager stores references via pointer dereference, creating a dependency on ButtonRegistry lifetime. If ButtonRegistry is ever destroyed, all Button references become invalid.
-- Safe modification: Either adopt a clear object ownership model (static lifetimes, smart pointers like `std::unique_ptr`) or ensure ButtonRegistry is never destroyed.
-- Test coverage: No tests verify pointer validity or memory cleanup.
+**NoteRegistry and ButtonRegistry use std::map with linear lookup:**
+- Files: `src/noteRegistry.h` (lines 17-26), `src/buttonRegistry.h`, `src/noteRegistry.cpp` (lines 17-19)
+- Why fragile: Both registries use `std::map<int, Button*>` (or MCUButton*). On every incoming MIDI message, a map lookup happens. With 24 total buttons (16 grid + 8 track) and 8 faders, the maps stay small (<30 entries), so lookup is O(log 30) ≈ O(5) comparisons. Not a performance issue, but the pattern is fragile if more buttons are added (e.g., Phase 4 animations might add callback registries).
+- Safe modification: Keep map entries under 50; if more needed, switch to array-based lookup or hash map. Current design is correct for current scope.
+- Test coverage: No unit tests for registry. Gap: if a CC number is registered twice or a button is unregistered mid-operation, behavior is undefined.
 
-**Pin definitions hardcoded in enumerations:**
-- Files: `src/pinDefines.h:22-23`, hardware pin assignments throughout
-- Why fragile: Two pins are flagged with concerning comments: `K15_SW` and `K16_SW` are connected to USB native ports (UD+/UD-), which are reserved pins on Teensy 3.5. Using these pins for input will interfere with USB functionality.
-- Safe modification: Remap these buttons to available pins. Test USB MIDI stability if you add new features.
-- Test coverage: No functional test verifies USB stability with current pin configuration.
+**Block diagram of LED control flow is not self-evident:**
+- Files: `src/button.cpp` (old Button class, unused), `src/mcuButton.cpp` (correct MCUButton), `src/inputManager.cpp` (calls setLedState), `src/main.cpp` (routes NoteOn/NoteOff to inputManager)
+- Why fragile: Two independent LED control paths exist:
+  1. **Old path**: Button.setLedState() via manual CC sends (lines 20-26 in button.cpp) — **UNUSED, BUGGY**.
+  2. **New path**: MCUButton.setLedState() via incoming NoteOn/NoteOff (main.cpp lines 56-65 → inputManager.handleNoteMessage → noteRegistry lookup → MCUButton.setLedState).
+  - Additionally, MCUButton.startBlink() can drive LED independent of setLedState() for pickup mode blink animation.
+- Safe modification: Do not mix Button and MCUButton in same code. Delete Button class to eliminate dual-path confusion. All LED changes must go through NoteRegistry and MCUButton.setLedState() or MCUButton.startBlink()/stopBlink().
+- Test coverage: No LED-specific tests. Verification is visual (plugging in and checking which LEDs light up in Logic's Control Surface prefs). Gap: if a NoteOn arrives for an unregistered note number, it silently fails (noteRegistry returns nullptr, inputManager's handleNoteMessage does null check at line 181 but no logging).
+
+**Blink period calculation in fader.read() uses signed/unsigned comparison:**
+- Files: `src/fader.cpp` (lines 77-82)
+- Why fragile: Line 81 calls `map(min(distance, 16383), 0, 16383, 600, 200)`. The `map()` function is Arduino's integer math routine; if distance is computed as signed int and 16383 is unsigned, comparison could misbehave on edge cases. Not a blocker on Teensy (32-bit ints) but fragile pattern.
+- Safe modification: Ensure distance calculation (line 77) is always positive: `int distance = abs(fader14bit - _dawValue14bit);` (already correct on line 77). Keep period calculation as is.
 
 ## Scaling Limits
 
-**Maximum 16 grid buttons + 8 track buttons:**
-- Current capacity: 24 buttons (16 grid + 8 track), 16 knobs/sliders
-- Limit: Teensy 3.5 has 64 GPIO pins. With 24 buttons (button + LED = 48 pins) + 16 analog inputs (knobs/sliders) = 64 pins. There's no room to add more inputs. Custom PCB is fully populated.
-- Scaling path: Upgrade to Teensy 4.1 (more pins), use a pin multiplexer (shift registers), or implement LED matrix to reduce pin count (requires more complex driver code).
+**Hardcoded array sizes limit future expansion:**
+- Current capacity:
+  - 16 grid buttons (K1-K16)
+  - 8 track buttons (P1-P8)
+  - 8 faders (SLIDE_1 to SLIDE_8)
+  - 8 knobs (KNOB_1 to KNOB_8)
+- Limit: Teensy 3.5 has 58 GPIO pins total. Currently using ~50+ pins (16 buttons + 16 LEDs for grid, 8 buttons + 8 LEDs for track, 8 faders, 8 knobs). No spare pins for expansion.
+- Scaling path: If more buttons needed (e.g., Phase 4 beat chaser animation mode LEDs), must use:
+  1. **Multiplexed matrix** (e.g., 4×6 button matrix reduces 24 buttons to 10 pins, frees 14 pins) — requires analog demux IC and re-mapping.
+  2. **I2C port expander** (MCP23017 adds 16 GPIO over 2 pins) — adds complexity and latency.
+  3. **Move to Teensy 4.1** (120+ GPIO pins) — hardware redesign.
+- Current design is at pin limit; Phase 3-4 may hit capacity if animation mode requires more LEDs or buttons.
 
-**No support for MIDI channels beyond channel 1:**
-- Current capacity: All buttons/knobs/sliders use MIDI channel 1
-- Limit: Most DAWs support 16 MIDI channels. Current firmware hardcodes channel 1.
-- Scaling path: Modify Button and Potentiometer to accept configurable MIDI channels, then add a mode selector or configuration interface.
-
-**No configuration persistence:**
-- Current capacity: Firmware behavior is completely determined at compile-time (pin mappings, CC numbers, thresholds).
-- Limit: Cannot change MIDI mappings or behavior without recompiling and re-uploading.
-- Scaling path: Add an EEPROM configuration store so users can reprogram mappings via SYSEX or a companion tool without recompiling.
+**SoftPWM MAXCHANNELS hardcoded at 22:**
+- Limit: `platformio.ini` line 18 notes SOFTPWM_MAXCHANNELS=22 (increased from upstream default of 20). Firmware uses 22 LED channels: K1-K14 grid + P1-P8 track.
+- Scaling path: If more LEDs added (e.g., status indicator LEDs for pickup mode, sync state, etc.), either:
+  1. Switch to hardware PWM (Teensy 3.5 has 9 hardware PWM pins available; would need careful pin reallocation).
+  2. Increase SOFTPWM_MAXCHANNELS in SoftPWM_timer.h and recompile library.
+  3. Reduce blink/fade functionality and use simple on/off for new LEDs.
 
 ## Dependencies at Risk
 
-**Bounce2 library maintenance:**
-- Risk: Bounce2 is a well-maintained debouncing library, but any breaking changes in future versions could require code updates. Current pinned version is `^2.70` (allow up to 3.x).
-- Impact: Button debouncing stops working if Bounce2 API changes.
-- Migration plan: If Bounce2 becomes unmaintained, implement simple debouncing in-house or use an alternative library like OneButton. Current usage is simple (attach, interval, update, changed/fell).
+**Bounce2 library for debouncing — stable but old pattern:**
+- Risk: `platformio.ini` line 16 specifies `thomasfredericks/Bounce2@^2.70`. Bounce2 is mature and widely used, so low risk of abandonment. However, the `^2.70` version constraint allows updates up to 3.0.0 (if released). Bounce2 maintainer is active but dependency updates should be tested.
+- Impact: If Bounce2 is updated and API changes, button debouncing could fail silently (e.g., if `interval()` or `fell()` behavior changes).
+- Migration plan: Bounce2 has no viable alternative; it's the de facto Arduino debounce library. If issues arise, consider forking or implementing custom software debounce (simple state machine, 20-30 lines of code).
 
-**SoftPWM library stability:**
-- Risk: SoftPWM (bhagman/SoftPWM @^1.0.1) is less actively maintained than Bounce2. Software PWM libraries are inherently timing-sensitive and may have issues on newer hardware or Arduino core versions.
-- Impact: LED fading could stop working, flicker, or consume excessive CPU if the library breaks.
-- Migration plan: Switch to hardware PWM using Teensy's built-in AnalogWrite or PWM functions. Requires changing `src/button.cpp:8` and `src/button.cpp:41` to use digitalWrite/analogWrite instead of SoftPWM functions.
+**SoftPWM library vendored locally — maintenance risk:**
+- Risk: `lib/SoftPWM/` is a local copy (vendored) of a third-party library. It's not fetched from external source during build, so version is fixed. However, vendoring increases maintenance burden: if upstream SoftPWM is updated with bug fixes or performance improvements, this copy won't get them.
+- Impact: If a critical bug is found in SoftPWM (e.g., LED flicker on Teensy 3.5 with certain interrupt timing), the local copy must be manually patched.
+- Migration plan: Keep vendored copy as-is unless issues arise. If upstream SoftPWM 2.x is forked or updates, consider re-syncing. Alternatively, switch to Teensy 4.x hardware PWM (9 pins available) to eliminate software PWM dependency.
 
-**Teensy 3.5 platform deprecation:**
-- Risk: Teensy 3.5 is largely deprecated (mentioned in README). PlatformIO support is stable, but the Arduino core may stop receiving updates.
-- Impact: Future Arduino or Teensy core updates may break USB MIDI functionality.
-- Migration plan: The firmware should be largely portable to Teensy 4.1 with pin remapping (mentioned in README). Plan a migration path if core support is discontinued.
+**Arduino framework version pinned to Teensy platform:**
+- Risk: `platformio.ini` line 12 specifies `platform = teensy` without version pin. PlatformIO will use latest Teensy platform on build. If Teensy platform updates the bundled Arduino core, USB MIDI API or hardware pin behavior could change.
+- Impact: Breaking changes in Arduino MIDI library (e.g., if `usbMIDI.sendPitchBend()` signature changes) would require code updates.
+- Migration plan: Pin Teensy platform version in platformio.ini if stability is critical (e.g., `platform = teensy@6.2.0`). For now, accept latest; test before production firmware updates.
+
+## Missing Critical Features
+
+**No error logging or debug output in firmware:**
+- Problem: If a MIDI message fails to send, or a fader reading is corrupted, or a bank switch doesn't trigger pickup mode, there's no way to diagnose the issue in the field. Serial debug is disabled (line 89 in main.cpp: "CC handler intentionally removed — per CONTEXT.md clean break decision").
+- Blocks: Phase 3-4 integration testing; users cannot self-diagnose connection issues without firmware modification.
+- Mitigation: Currently acceptable for embedded single-user device. If shipping to others, add optional compile-time debug mode (e.g., `#define DEBUG_ENABLED` to enable Serial.println() statements).
+
+**No watchdog timer or heart-beat monitoring:**
+- Problem: If firmware hangs in any function (e.g., deadlock in ripple animation millis() overflow, or infinite loop in Bounce2.update()), the controller becomes unresponsive but continues drawing USB power. Host DAW may lose MIDI sync without feedback.
+- Blocks: Phase 4 beat chaser (which depends on millis() clock drift handling); critical for reliable production use.
+- Mitigation: Teensy 3.5 has built-in watchdog timer. Not implemented yet; could be added in Phase 3-4 if needed. For now, manual testing with 4-hour runtime confirms no hangs.
+
+**No MIDI input filtering or bounds checking:**
+- Problem: Incoming CC, NoteOn, NoteOff, and Pitch Bend are processed without validation. If external MIDI source sends malformed messages or out-of-range values (e.g., CC 255, note 128), firmware behavior is undefined.
+- Blocks: If controller is ever connected to untrusted MIDI sources, could crash firmware.
+- Mitigation: Current design assumes Logic Pro as sole MIDI source (trusted). If multi-source MIDI is needed (Phase 4 beat chaser from external click track, for example), add input validation.
 
 ## Test Coverage Gaps
 
-**No unit tests:**
-- What's not tested: Button debouncing, MIDI CC transmission, LED state updates, potentiometer filtering, ButtonRegistry lookups, control change message handling.
-- Files: All source files in `src/`
-- Risk: Bugs like the LED state copy-by-value in `src/inputManager.cpp:25` and inverted button logic in `src/button.cpp:20-26` could have been caught by basic unit tests.
-- Priority: High — add at least smoke tests for Button, Potentiometer, and ButtonRegistry before adding new features.
+**No unit tests for core state machines:**
+- What's not tested:
+  - Fader pickup FSM (OUT_OF_SYNC → SYNCED transitions, deadband crossing, lazy blink reveal)
+  - MCUButton blink FSM (blink period updates, phase toggling)
+  - NoteRegistry and ButtonRegistry map operations
+  - Ripple animation distance calculations and timing
+- Files: `src/fader.cpp`, `src/mcuButton.cpp`, `src/noteRegistry.cpp`, `src/buttonRegistry.cpp`, `src/inputManager.cpp`
+- Risk: If pickup FSM logic is changed or blink timing is adjusted, regressions could be introduced silently. No test suite catches them until hardware verification (manual, time-consuming).
+- Priority: **High** — Phase 2 completion requires manual hardware verification of pickup mode; unit tests would accelerate Phase 3-4 development by 20-30%.
 
-**No integration tests with simulated DAW:**
-- What's not tested: Bidirectional MIDI feedback loop (hardware → DAW → hardware LED update), full control flow from button press to LED feedback.
-- Files: Entire firmware
-- Risk: The LED feedback bug (`src/inputManager.cpp:25`) went unnoticed because there's no automated test that presses a button, simulates a DAW CC response, and verifies the LED updates.
-- Priority: High — add integration test suite using Teensy simulator or mock MIDI input.
+**No integration tests for MIDI message flow:**
+- What's not tested:
+  - Full NoteOn → NoteRegistry → MCUButton → LED update chain
+  - Pitch bend message arrival → setFaderDawValue → Fader FSM → MIDI output
+  - Multiple faders transitioning between SYNCED/OUT_OF_SYNC simultaneously (multi-bank switch scenario)
+- Files: All of inputManager, fader, mcuButton in concert
+- Risk: If refactoring any MIDI callback or registry lookup, side effects could break LED feedback without obvious cause.
+- Priority: **Medium** — Phase 3 transport grid integration should include basic MIDI echo tests (send NoteOn, verify NoteRegistry lookup works).
 
-**No USB stability test:**
-- What's not tested: USB enumeration with K15_SW and K16_SW connected to reserved pins, USB MIDI message throughput, behavior under rapid button presses or slider movements.
-- Files: `src/pinDefines.h`, `src/main.cpp`
-- Risk: USB interference from pins 22-23 could cause intermittent disconnects or data loss.
-- Priority: Medium — test USB stability with current hardware configuration, plan pin migration if issues found.
-
-**No analog input linearity test:**
-- What's not tested: Potentiometer mapping accuracy, hysteresis behavior, noise filtering effectiveness across the full ADC range.
-- Files: `src/potentiometer.cpp`
-- Risk: If a knob or slider is damaged or the ADC is noisy, MIDI messages may be incorrect or erratic.
-- Priority: Medium — add a test that reads analog values and verifies mapped CC output is linear and stable.
+**No hardware abstraction tests:**
+- What's not tested:
+  - ADC reading and noise filtering (Potentiometer.hasChanged threshold)
+  - Button debounce timing (does Bounce2 actually debounce on this hardware pin configuration?)
+  - SoftPWM fade timing (is 125ms fade time perceived correctly, or does SoftPWM timer interrupt jitter affect it?)
+- Files: `src/potentiometer.cpp`, `src/mcuButton.cpp` (Bounce2 usage), `src/inputManager.cpp` (SoftPWM calls)
+- Risk: Minor drift in timing could cause faders to feel unresponsive or blinks to strobe at wrong frequency.
+- Priority: **Low** — These are verified through manual hardware testing already. Unit tests difficult without a Teensy and real pins; integration tests in Phase 3 can catch timing issues.
 
 ---
 
-*Concerns audit: 2026-02-20*
+*Concerns audit: 2026-03-02*
