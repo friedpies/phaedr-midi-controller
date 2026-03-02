@@ -35,6 +35,14 @@
 // Metronome/Click toggle state:
 #define MCU_NOTE_METRONOME      89
 
+// Track SELECT notes (track selection buttons)
+#define MCU_NOTE_SELECT_BASE    24  // SELECT Ch1-Ch8: notes 24-31
+
+// Transport button notes
+#define MCU_NOTE_STOP           93  // Transport: Stop
+#define MCU_NOTE_PLAY           94  // Transport: Play
+#define MCU_NOTE_RECORD         95  // Transport: Record
+
 // Grid button indices (0-based) for mode LED feedback from Logic.
 // K13 (index 12) is Loop — registered directly in init(), no constant needed.
 // K10 (index 9) and K11 (index 10) host Punch/Metronome until reassigned.

@@ -47,38 +47,12 @@ Plans:
 - [ ] 02-02-PLAN.md — Fader pickup FSM: DAW value tracking, MIDI suppression, crossover detection (PICK-01, PICK-02, PICK-04, PICK-05, PICK-06)
 - [ ] 02-03-PLAN.md — Integration: InputManager + main.cpp wiring, mcuConfig.h, LED-03 NoteRegistry, hardware verification checkpoint (LED-03, PICK-01, PICK-02, PICK-03, PICK-05, PICK-06)
 
-### Phase 3: Grid Transport Layout
-**Goal**: All 16 grid buttons send correct MCU note numbers, the bottom row functions as a transport hub (Shift, Record, Stop, Play), cursor navigation controls Logic, and holding Shift activates secondary button functions
-**Depends on**: Phase 2
-**Requirements**: GRID-01, GRID-02, GRID-03, GRID-04
-**Success Criteria** (what must be TRUE):
-  1. Pressing Play (btn 16), Stop (btn 15), and Record (btn 14) on the grid controls Logic transport; Record's LED reflects Logic's record-arm state
-  2. Pressing the cursor buttons (Up/Down/Left/Right) on the grid moves Logic's selection or playhead as expected
-  3. Pressing Bank Prev/Next on the grid switches Logic's channel bank; the bank switch triggers pickup blink on all 8 faders (from Phase 2)
-  4. Holding Shift (btn 13) and pressing a secondary-function button sends the alternate MCU note number; releasing Shift returns buttons to primary function
-  5. Loop Toggle and Metronome/Click buttons on the grid control Logic and their LEDs reflect the current Logic state
-**Plans**: TBD
-
-### Phase 4: Animation Manager
-**Goal**: The controller feels alive — a startup animation plays on power-on, a beat chaser sweeps the grid in sync with Logic's playback tempo, bank switches and record start trigger distinct action animations, and holding Shift dims non-transport LEDs
-**Depends on**: Phase 3
-**Requirements**: BEAT-01, BEAT-02, BEAT-03, BEAT-04, BEAT-05, BEAT-06, BEAT-07, ANIM-01, ANIM-02, ANIM-03, ANIM-04, ANIM-05, ANIM-06, ANIM-07, ACT-01, ACT-02, ACT-03, ACT-04
-**Success Criteria** (what must be TRUE):
-  1. On power-on, one of the four startup animations (determined by compile-time config) plays across the grid LEDs before settling to DAW state; MIDI messages received during the animation are processed without dropping
-  2. Starting playback in Logic causes a single LED to advance across the 14-LED grid one cell per beat, visually in tempo; stopping playback freezes the LED at its current position
-  3. Resuming playback from a mid-song position (Logic sends Continue, not Start) does not reset the beat chaser to cell 0 — it resumes from where it stopped
-  4. Switching banks in Logic triggers the brief cascade sweep across the 8 channel button LEDs before the pickup blink takes over
-  5. The beat chaser never illuminates the Record, Play, Stop, or Shift LED cells — those cells are owned by transport state at all times
-**Plans**: TBD
-
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. MCU Protocol Foundation | 5/5 | Complete   | 2026-02-22 |
 | 2. LED State + Pickup Mode | 3/3 | Complete   | 2026-03-01 |
-| 3. Grid Transport Layout | 0/TBD | Not started | - |
-| 4. Animation Manager | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-02-21*

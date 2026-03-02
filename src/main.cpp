@@ -13,10 +13,10 @@ static void playStartupAnimation()
 {
     const int allLeds[] = {
         LED_K1, LED_K2, LED_K3, LED_K4, LED_K5, LED_K6, LED_K7, LED_K8,
-        LED_K9, LED_K10, LED_K11, LED_K12, LED_K13, LED_K14, LED_K15, LED_K16,
+        LED_K9, LED_K10, LED_K11, LED_K12, LED_K13, LED_K14,
         LED_P1, LED_P2, LED_P3, LED_P4, LED_P5, LED_P6, LED_P7, LED_P8
     };
-    const int N      = 24;
+    const int N      = 22;
     const int STEP   = 35;  // ms per LED position
     const int WINDOW = 5;   // pulse width — trailing edge fades via SoftPWM
 

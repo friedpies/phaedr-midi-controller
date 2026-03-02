@@ -21,17 +21,17 @@ void InputManager::init()
     gridButtons[10].setup(K11_SW, LED_K11, -1, DEBOUNCE_TIME);
     gridButtons[11].setup(K12_SW, LED_K12, -1, DEBOUNCE_TIME);
 
-    // K13: Loop enable/disable — MCU note 86, has LED
-    gridButtons[12].setup(K13_SW, LED_K13, 86, DEBOUNCE_TIME);
+    // K13: Cycle (Loop) enable/disable — has LED
+    gridButtons[12].setup(K13_SW, LED_K13, MCU_NOTE_LOOP, DEBOUNCE_TIME);
 
-    // K14: Record — MCU-04 REQUIRED, note 95, has LED
-    gridButtons[13].setup(K14_SW, LED_K14, 95, DEBOUNCE_TIME);  // Record (MCU-04)
+    // K14: Record — has LED
+    gridButtons[13].setup(K14_SW, LED_K14, MCU_NOTE_RECORD, DEBOUNCE_TIME);
 
-    // K15: Stop — MCU-04 REQUIRED, note 93, NO LED hardware (ledPin=-1)
-    gridButtons[14].setup(K15_SW, -1, 93, DEBOUNCE_TIME);       // Stop (MCU-04), no LED
+    // K15: Play — NO LED hardware (ledPin=-1)
+    gridButtons[14].setup(K15_SW, -1, MCU_NOTE_PLAY, DEBOUNCE_TIME);
 
-    // K16: Play — MCU-04 REQUIRED, note 94, NO LED hardware (ledPin=-1)
-    gridButtons[15].setup(K16_SW, -1, 94, DEBOUNCE_TIME);       // Play (MCU-04), no LED
+    // K16: Stop — NO LED hardware (ledPin=-1)
+    gridButtons[15].setup(K16_SW, -1, MCU_NOTE_STOP, DEBOUNCE_TIME);
 
     // Note: Rewind (note 91) and FastForward (note 92) are NOT assigned.
     // This hardware has no physical Rewind or FF buttons — hardware design constraint.
@@ -75,48 +75,42 @@ void InputManager::init()
 
     // ---- NoteRegistry — register buttons that receive LED feedback from Logic ----
     // K1–K12: inert — not registered
-    noteRegistry.registerButton(MCU_NOTE_LOOP,      &gridButtons[12]);   // K13 Loop
+    noteRegistry.registerButton(MCU_NOTE_LOOP,      &gridButtons[12]);   // K13 Cycle
     noteRegistry.registerButton(MCU_NOTE_PUNCH_IN,  &gridButtons[MCU_PUNCH_GRID_INDEX]);
     noteRegistry.registerButton(MCU_NOTE_METRONOME, &gridButtons[MCU_METRO_GRID_INDEX]);
-    noteRegistry.registerButton(95, &gridButtons[13]);  // K14 Record
-    // K15 Stop, K16 Play: no LED hardware — not registered
+    noteRegistry.registerButton(MCU_NOTE_RECORD,    &gridButtons[13]);   // K14 Record
+    // K15 Play, K16 Stop: no LED hardware — not registered
     // P1–P8: SELECT notes 24–31 — LED driven by Logic's SELECT feedback
-    noteRegistry.registerButton(24, &trackButtons[0]);  // P1 SELECT Ch1
-    noteRegistry.registerButton(25, &trackButtons[1]);  // P2 SELECT Ch2
-    noteRegistry.registerButton(26, &trackButtons[2]);  // P3 SELECT Ch3
-    noteRegistry.registerButton(27, &trackButtons[3]);  // P4 SELECT Ch4
-    noteRegistry.registerButton(28, &trackButtons[4]);  // P5 SELECT Ch5
-    noteRegistry.registerButton(29, &trackButtons[5]);  // P6 SELECT Ch6
-    noteRegistry.registerButton(30, &trackButtons[6]);  // P7 SELECT Ch7
-    noteRegistry.registerButton(31, &trackButtons[7]);  // P8 SELECT Ch8 / master
+    for (int i = 0; i < NUM_TRACKS; i++) {
+        noteRegistry.registerButton(MCU_NOTE_SELECT_BASE + i, &trackButtons[i]);
+    }
 }
 
 // Physical 2D positions of each LED in grid-cell units (one grid cell = 1.0).
-// Grid K1–K16: 4 columns × 4 rows, K1 at top-left.
-// Track P1–P8: single row to the right of the grid, roughly level with rows 2–3.
-static const float LED_POS_X[24] = {
+// K1–K14 have LEDs; K15–K16 do not (no LED hardware). P1–P8 have LEDs.
+static const float LED_POS_X[22] = {
     0.f, 1.f, 2.f, 3.f,   // K1–K4   row 0
     0.f, 1.f, 2.f, 3.f,   // K5–K8   row 1
     0.f, 1.f, 2.f, 3.f,   // K9–K12  row 2
-    0.f, 1.f, 2.f, 3.f,   // K13–K16 row 3
+    0.f, 1.f,              // K13–K14 row 3 (K15–K16 have no LEDs)
     4.5f, 5.5f, 6.5f, 7.5f, 8.5f, 9.5f, 10.5f, 11.5f  // P1–P8
 };
-static const float LED_POS_Y[24] = {
+static const float LED_POS_Y[22] = {
     0.f, 0.f, 0.f, 0.f,   // K1–K4   row 0
     1.f, 1.f, 1.f, 1.f,   // K5–K8   row 1
     2.f, 2.f, 2.f, 2.f,   // K9–K12  row 2
-    3.f, 3.f, 3.f, 3.f,   // K13–K16 row 3
+    3.f, 3.f,              // K13–K14 row 3
     2.8f, 2.8f, 2.8f, 2.8f, 2.8f, 2.8f, 2.8f, 2.8f  // P1–P8
 };
 
-static const int   RIPPLE_N       = 24;
+static const int   RIPPLE_N       = 22;
 static const float RIPPLE_SPEED    = 90.0f;  // ms per grid-cell of distance
 static const int   RIPPLE_HOLD_MS  = 260;    // how long each LED stays bright before fading
 static const float RIPPLE_DECAY    = 0.35f;  // exponential decay rate — higher = steeper drop-off
 
-static const int RIPPLE_LEDS[24] = {
+static const int RIPPLE_LEDS[22] = {
     LED_K1, LED_K2, LED_K3, LED_K4, LED_K5, LED_K6, LED_K7, LED_K8,
-    LED_K9, LED_K10, LED_K11, LED_K12, LED_K13, LED_K14, LED_K15, LED_K16,
+    LED_K9, LED_K10, LED_K11, LED_K12, LED_K13, LED_K14,
     LED_P1, LED_P2, LED_P3, LED_P4, LED_P5, LED_P6, LED_P7, LED_P8
 };
 
@@ -139,13 +133,16 @@ void InputManager::triggerRipple(int originIdx)
     _ripple.active  = true;
 }
 
+static const int NUM_GRID_LEDS = 14;  // K1–K14 have LEDs; K15–K16 do not
+
 void InputManager::readIdle()
 {
     for (int i = 0; i < NUM_GRID_BUTTONS; i++) {
-        if (gridButtons[i].poll()) triggerRipple(i);
+        // Only trigger ripple for buttons that have LEDs (K1–K14 = indices 0–13)
+        if (gridButtons[i].poll() && i < NUM_GRID_LEDS) triggerRipple(i);
     }
     for (int i = 0; i < NUM_TRACKS; i++) {
-        if (trackButtons[i].poll()) triggerRipple(NUM_GRID_BUTTONS + i);
+        if (trackButtons[i].poll()) triggerRipple(NUM_GRID_LEDS + i);
     }
 }
 
@@ -197,16 +194,16 @@ void InputManager::readAll()
         // LED driven by Logic's SELECT feedback via NoteRegistry.
         if (trackButtons[i].poll()) {
             _selectedTrack = i;
-            usbMIDI.sendNoteOn(24 + i, 127, 1);
-            usbMIDI.sendNoteOff(24 + i, 0, 1);
+            usbMIDI.sendNoteOn(MCU_NOTE_SELECT_BASE + i, 127, 1);
+            usbMIDI.sendNoteOff(MCU_NOTE_SELECT_BASE + i, 0, 1);
         }
         bool knobMoved  = trackKnobs[i].read();
         bool faderMoved = trackFaders[i].read();
 
         if ((knobMoved || faderMoved) && _selectedTrack != i) {
             _selectedTrack = i;
-            usbMIDI.sendNoteOn(24 + i, 127, 1);
-            usbMIDI.sendNoteOff(24 + i, 0, 1);
+            usbMIDI.sendNoteOn(MCU_NOTE_SELECT_BASE + i, 127, 1);
+            usbMIDI.sendNoteOff(MCU_NOTE_SELECT_BASE + i, 0, 1);
         }
     }
 }

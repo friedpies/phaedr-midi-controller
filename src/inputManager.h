@@ -29,13 +29,14 @@ public:
 
 private:
     // 2D ripple state — per-LED distances computed at trigger time, checked each update
+    // 22 LEDs: K1–K14 (14 grid LEDs, K15–K16 have no LEDs) + P1–P8 (8 track LEDs)
     struct RippleState {
         bool     active    = false;
         uint32_t startMs   = 0;
-        float    dist[24];       // Euclidean distance from pressed LED for each of the 24 LEDs
-        uint8_t  brightness[24]; // pre-computed dampened brightness (full at origin, falls off with dist)
-        bool     lit[24];        // has this LED been turned on yet?
-        bool     faded[24];      // has this LED been faded out yet?
+        float    dist[22];
+        uint8_t  brightness[22];
+        bool     lit[22];
+        bool     faded[22];
     } _ripple;
 
     int8_t _selectedTrack = -1;  // -1 = none; 0–6 = tracks 1–7; 7 = master (P8)
@@ -44,7 +45,7 @@ private:
 
     // MCUButton arrays — default-constructed here, configured in init() via setup()
     MCUButton gridButtons[NUM_GRID_BUTTONS];   // K1–K16
-    MCUButton trackButtons[NUM_TRACKS];         // P1–P8: MCU REC notes 0–7
+    MCUButton trackButtons[NUM_TRACKS];         // P1–P8: MCU SELECT notes 24–31
 
     // Fader array — default-constructed here, configured in init() via setup()
     // Sends Pitch Bend on MIDI channels 1–8 per MCU fader protocol
