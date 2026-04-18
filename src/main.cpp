@@ -1,65 +1,104 @@
-#define ENABLEMIDI 1
-
 #include <Arduino.h>
-
-#ifdef ENABLEMIDI
-#include <MIDIUSB.h>
-#include <MIDI.h>
-#include <MIDI.hpp>
-#endif
-
+#include <SoftPWM.h>
 #include "pinDefines.h"
 #include "inputManager.h"
-#include "button.h"
+#include "mcuProtocol.h"
 
-const int DEFAULT_MIDI_CHANNEL = 1;
+InputManager inputManager;
 
-InputManager inputManager = InputManager();
-// void OnNoteOn(byte channel, byte note, byte velocity)
-// {
-//     digitalWrite(LED_K1, HIGH); // Any Note-On turns on LED
-// }
-
-// void OnNoteOFF(byte channel, byte note, byte velocity)
-// {
-//     digitalWrite(LED_K1, LOW); // Any Note-On turns on LED
-// }
-void handleControlChangeMessage(byte channel, byte ccNum, byte velocity)
+// BOOT-01: Pulse startup animation — a window of ~5 LEDs sweeps back and forth like a wave.
+// SoftPWM fade-out on the trailing edge creates a natural comet tail behind the pulse.
+// Runs blocking in setup() BEFORE usbMIDI handlers are registered.
+static void playStartupAnimation()
 {
-    Serial.println("CONTROL CHANGE");
-    inputManager.handleControlChangeMessage(channel, ccNum, velocity);
+    const int allLeds[] = {
+        LED_K1, LED_K2, LED_K3, LED_K4, LED_K5, LED_K6, LED_K7, LED_K8,
+        LED_K9, LED_K10, LED_K11, LED_K12, LED_K13, LED_K14,
+        LED_P1, LED_P2, LED_P3, LED_P4, LED_P5, LED_P6, LED_P7, LED_P8
+    };
+    const int N      = 22;
+    const int STEP   = 35;  // ms per LED position
+    const int WINDOW = 5;   // pulse width — trailing edge fades via SoftPWM
+
+    // 2 full back-and-forth sweeps (~6.5 seconds total)
+    for (int sweep = 0; sweep < 2; sweep++) {
+        // Forward: pulse travels K1 → P8
+        for (int i = 0; i < N; i++) {
+            SoftPWMSet(allLeds[i], LED_MAX_BRIGHTNESS);
+            if (i >= WINDOW) SoftPWMSet(allLeds[i - WINDOW], 0);
+            delay(STEP);
+        }
+        // Fade out trailing window, pause before reversing
+        for (int i = N - WINDOW; i < N; i++) SoftPWMSet(allLeds[i], 0);
+        delay(150);
+
+        // Backward: pulse travels P8 → K1
+        for (int i = N - 1; i >= 0; i--) {
+            SoftPWMSet(allLeds[i], LED_MAX_BRIGHTNESS);
+            if (i + WINDOW < N) SoftPWMSet(allLeds[i + WINDOW], 0);
+            delay(STEP);
+        }
+        // Fade out trailing window, pause before next sweep (or ending)
+        for (int i = WINDOW - 1; i >= 0; i--) SoftPWMSet(allLeds[i], 0);
+        delay(150);
+    }
+    delay(200);  // final settle
 }
 
-void handleStart()
+// SysEx handler — forwards to MCUProtocol state machine
+void handleSysEx(const uint8_t* data, uint16_t length, bool complete)
 {
-    Serial.println("HANDLE START");
+    mcuProtocol.handleSysEx(data, length, complete);
 }
 
-void handleClock()
+// NoteOn from Logic — LED state feedback
+// velocity 127 = LED on, 1 = blink (Phase 2), 0 = LED off
+void handleNoteOn(byte channel, byte note, byte velocity)
 {
-    Serial.println("HANDLE CLOCK");
+    inputManager.handleNoteMessage(note, velocity);
 }
 
-void handleStop()
+// NoteOff from Logic — LED off
+// Some Logic versions send NoteOff instead of NoteOn(vel=0) for LED-off state
+void handleNoteOff(byte channel, byte note, byte velocity)
 {
-    // Serial.println("HANDLE STOP");
+    inputManager.handleNoteMessage(note, 0);  // treat NoteOff as velocity 0
+}
+
+// PICK-01: Receive fader position feedback from Logic Pro.
+// Logic sends Pitch Bend on MIDI channels 1-8 to tell the controller each fader's current DAW value.
+// Teensyduino callback: value is signed -8192..+8191; convert to 14-bit 0..16383 with +8192 offset.
+void handlePitchBend(byte channel, int value)
+{
+    if (channel >= 1 && channel <= 8) {
+        inputManager.setFaderDawValue(channel - 1, value + 8192);
+    }
 }
 
 void setup()
 {
+    // SoftPWMBegin() is called inside inputManager.init() — do not call twice
     inputManager.init();
-    usbMIDI.setHandleControlChange(handleControlChangeMessage);
-    usbMIDI.setHandleStart(handleStart);
-    usbMIDI.setHandleClock(handleClock);
-    usbMIDI.setHandleStop(handleStop);
+    playStartupAnimation();     // BOOT-01: cascade animation confirms LEDs work on power-on
+    mcuProtocol.begin();
+
+    usbMIDI.setHandleSystemExclusive(handleSysEx);
+    usbMIDI.setHandleNoteOn(handleNoteOn);
+    usbMIDI.setHandleNoteOff(handleNoteOff);
+    usbMIDI.setHandlePitchChange(handlePitchBend);  // PICK-01: receive fader DAW values from Logic
+    // Note: CC handler intentionally removed — per CONTEXT.md clean break decision
+    // Note: handleStart/handleClock/handleStop will be added in Phase 4 for beat chaser
 }
 
 void loop()
 {
-    inputManager.readAll();
+    if (mcuProtocol.isHandshakeComplete()) {
+        inputManager.readAll();
+        inputManager.updateBlinks();  // PICK-03: advance channel button blink state machines
+    } else {
+        inputManager.readIdle();    // pre-handshake: detect presses for ripple, no MIDI output
+        inputManager.updateRipple();
+    }
+    mcuProtocol.update();  // handles handshake retry timer
     usbMIDI.read();
 }
-
-// class Button(input pin)
-// emitter --> on clicked
-// readonly onClick

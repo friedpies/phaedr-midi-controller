@@ -1,97 +1,85 @@
 # Technology Stack
 
-**Analysis Date:** 2026-02-20
+**Analysis Date:** 2026-03-02
 
 ## Languages
 
 **Primary:**
-- C++ (C++11 or later) - Firmware implementation for Teensy microcontroller
-- Arduino - Hardware abstraction and board support
+- C++ (Arduino dialect) - All firmware code (src/*.cpp and src/*.h)
 
 **Secondary:**
-- Python - PlatformIO build system configuration and scripting
+- Arduino Sketch - Arduino-style setup()/loop() pattern in `src/main.cpp`
 
 ## Runtime
 
 **Environment:**
-- Teensy 3.5 microcontroller (ARM Cortex-M4, 72 MHz, 256KB RAM)
-- Arduino framework for Teensy
+- Teensyduino (Arduino framework for Teensy microcontrollers)
+- Teensy 3.5 ARM Cortex-M4 @ 120 MHz
+- Flash: 512 KB, RAM: 192 KB
 
 **Package Manager:**
-- PlatformIO - Embedded systems build and dependency management
-- Version detection: Defined via `platformio` CLI (install via `pip install platformio`)
+- PlatformIO (pio CLI)
+- Lockfile: `platformio.lock` (managed automatically by PlatformIO)
 
 ## Frameworks
 
 **Core:**
-- Arduino Framework - Hardware abstraction layer for microcontroller I/O, timing, and serial communication
-- Teensy Board Support - Specialized Arduino implementation for Teensy 3.5 with native USB MIDI support
+- Arduino Framework (via PlatformIO/Teensyduino) - Microcontroller programming model with setup()/loop()
+- Teensyduino USB Stack - Native USB MIDI and Serial support via `usbMIDI` object
 
-**Hardware Abstraction:**
-- `<Arduino.h>` - GPIO, serial, ADC, timing functions
+**Input/Output:**
+- Bounce2 2.70 - Button debouncing with configurable debounce time
+- SoftPWM 1.0.1 (vendored locally) - PWM-based LED brightness/fading control
+
+**Build/Dev:**
+- PlatformIO - Build system and uploader
+- platformio.ini - Project configuration
 
 ## Key Dependencies
 
 **Critical:**
-- Bounce2 (v2.70) - Button debouncing library for physical switch input stability
-  - Used in: `src/button.h`, `src/button.cpp`
-  - Purpose: Eliminates contact bounce noise on mechanical buttons with 20ms debounce window
+- `Bounce2` (^2.70) - Debounces 24 button inputs (16 grid + 8 track). Required for stable button reads. Installation: `thomasfredericks/Bounce2@^2.70`
+- `SoftPWM` (1.0.1) - Drives 24 LED outputs (22 channels: K1-K16 grid LEDs + P1-P8 track LEDs) with PWM fading. Vendored locally in `lib/SoftPWM/` with custom compile flag `SOFTPWM_MAXCHANNELS=22` (increased from upstream default of 20).
 
-- SoftPWM (v1.0.1) - Software PWM (Pulse Width Modulation) for LED brightness control
-  - Used in: `src/button.h`, `src/button.cpp`
-  - Purpose: Provides LED fade/brightness effects without requiring dedicated hardware PWM pins
-
-**MIDI Communication:**
-- MIDIUSB (built-in to Teensy core) - Native USB MIDI protocol implementation
-  - Used in: `src/main.cpp`, `src/button.h`, `src/buttonRegistry.cpp`
-  - Purpose: Bidirectional USB MIDI communication with DAW (Ableton, etc.)
-
-- MIDI Library (implicitly included via `<MIDI.h>` and `<MIDI.hpp>`)
-  - Used in: `src/main.cpp`
-  - Purpose: MIDI protocol parsing and message handling
+**Infrastructure:**
+- Teensyduino USB MIDI Stack (built into Arduino framework) - USB MIDI endpoint + optional serial debug
 
 ## Configuration
 
 **Environment:**
-- Build flag: `-DUSB_MIDI_SERIAL` enables simultaneous USB MIDI and Serial communication
-- Allows debugging via Serial monitor while MIDI I/O operates on USB
+- No .env files
+- No external configuration required
+- Build flag: `-DUSB_MIDI_SERIAL` (platformio.ini line 20) enables simultaneous USB MIDI + serial debug output
 
-**Build Configuration:**
-- `platformio.ini` - PlatformIO project configuration
-  - Platform: `teensy`
-  - Board: `teensy35`
-  - Framework: `arduino`
-  - Library dependencies defined in `lib_deps` section
+**Build:**
+- `platformio.ini` - Single environment: `[env:teensy35]`
+  - platform: teensy
+  - board: teensy35
+  - framework: arduino
+  - lib_deps: Bounce2, SoftPWM (vendored)
+  - build_flags: `-DUSB_MIDI_SERIAL`
 
-**Hardware Pins:**
-- All pin assignments defined in `src/pinDefines.h`
-- 16 grid button switches with corresponding LEDs
-- 8 track button switches with corresponding LEDs
-- 8 knobs (rotary potentiometers)
-- 8 sliders (linear potentiometers)
+**Hardware Configuration:**
+- GPIO pin mappings: `src/pinDefines.h` (24 button pins + 24 LED pins + 8 knob ADC pins + 8 slider ADC pins)
+- LED brightness limit: `LED_MAX_BRIGHTNESS = 180` (70.6% PWM duty to stay within 500mA USB power budget)
 
 ## Platform Requirements
 
 **Development:**
-- PlatformIO CLI or PlatformIO IDE extension
-- Python 3.x (for PlatformIO)
-- Teensy bootloader/upload capability
-- USB cable for programming and power
-- Teensyduino libraries (installed via PlatformIO)
+- PlatformIO installed: `pip install platformio`
+- USB cable to Teensy 3.5
+- Optional: PlatformIO IDE extension for VS Code / alternative IDE support
 
-**Build Commands:**
-- Build: `pio run`
-- Upload to Teensy: `pio run --target upload`
-- Clean: `pio run --target clean`
-- Serial monitor: `pio device monitor`
-
-**Production/Deployment:**
-- Target platform: Teensy 3.5 microcontroller
-- USB MIDI interface to host computer (DAW)
-- No external network connectivity required
-- No cloud integration required
-- Standalone firmware deployment via USB programming
+**Production:**
+- Teensy 3.5 microcontroller board
+- Custom PCB with:
+  - 16 grid buttons + 16 LEDs
+  - 8 track buttons + 8 LEDs
+  - 8 rotary potentiometer knobs (analog inputs)
+  - 8 linear faders (analog inputs)
+- USB host with USB MIDI driver support (DAW such as Ableton Live, Logic Pro, etc.)
+- USB power: ~489 mA max (24 LEDs × 14.1 mA avg + 150 mA Teensy = ~489 mA)
 
 ---
 
-*Stack analysis: 2026-02-20*
+*Stack analysis: 2026-03-02*

@@ -19,8 +19,8 @@
 #define K12_SW 49
 #define K13_SW 37
 #define K14_SW 38
-#define K15_SW A25 // BAD SCHEM UD+
-#define K16_SW A26 // HOOKED UP TO USB NATIVE PORTS, DUMB UD-
+#define K15_SW 35 // BAD SCHEM UD+
+#define K16_SW 36 // HOOKED UP TO USB NATIVE PORTS, DUMB UD-
 
 #define P1_SW 12
 #define P2_SW 24
@@ -63,8 +63,8 @@
 #define LED_K12 23
 #define LED_K13 29
 #define LED_K14 30
-#define LED_K15 35
-#define LED_K16 36
+#define LED_K15 -1
+#define LED_K16 -1
 
 #define LED_P1 50
 #define LED_P2 57
@@ -75,5 +75,9 @@
 #define LED_P7 52
 #define LED_P8 51
 
+
+// USB power budget: 24 LEDs × ~20mA peak × (LED_MAX_BRIGHTNESS/255) duty + ~150mA Teensy <= 500mA
+// 180/255 = 70.6% duty → ~14.1mA avg per LED → 24 × 14.1 + 150 = ~489mA max
+#define LED_MAX_BRIGHTNESS 180
 
 #endif

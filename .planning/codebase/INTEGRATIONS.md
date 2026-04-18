@@ -1,127 +1,152 @@
 # External Integrations
 
-**Analysis Date:** 2026-02-20
+**Analysis Date:** 2026-03-02
 
 ## APIs & External Services
 
-**MIDI Communication:**
-- USB MIDI Protocol - Bidirectional communication with host DAW
-  - SDK/Client: Native Teensy MIDIUSB library (built-in to Teensy core)
-  - Connection method: USB 2.0 connection to host computer
-  - Protocol: MIDI (Musical Instrument Digital Interface) over USB
-  - Purpose: Send CC (Control Change) messages from hardware to DAW; receive CC messages from DAW to update LED states
+**MIDI Protocol:**
+- USB MIDI over native Teensy USB endpoint
+  - SDK/Client: Teensyduino `usbMIDI` object (built-in to Arduino framework)
+  - Channel: MIDI channel 1 (all messages)
+  - Protocol: Standard USB MIDI class-compliant device
+  - No authentication required
 
-**DAW Integration (Supported but not hardcoded):**
-- Ableton Live - Primary reference DAW for controller mapping
-  - Integration via: Standard MIDI CC messaging on channel 1
-  - No API integration - uses standardized MIDI protocol
-  - Supports any DAW that accepts USB MIDI input and outputs MIDI CC messages
+**Mackie Control Universal (MCU) Protocol:**
+- Handshake via SysEx (System Exclusive)
+  - Header: F0 00 00 66 14 (Mackie MCU device ID)
+  - Device Identity: "PHAEDR\0" (7-byte serial)
+  - Handshake: Challenge-response authentication (4-byte static challenge: 0x7A 0x6B 0x5C 0x4D)
+  - Implementation: `src/mcuProtocol.h/cpp`
+  - Status: Required for handshake before input/output; retry every 5 seconds if DAW doesn't respond
 
 ## Data Storage
 
 **Databases:**
-- None - Firmware does not use any database
+- Not applicable
 
 **File Storage:**
-- None - Firmware does not use file storage
+- Local firmware only; no persistent storage beyond microcontroller flash
 
 **Caching:**
-- Runtime state only - Button states and potentiometer values held in memory
-  - Grid button states: 16 x 1 byte (toggle state)
-  - Track button states: 8 x 1 byte (toggle state)
-  - Potentiometer values: 16 x 1 byte (last MIDI value, 0-127)
-  - No persistent storage
+- Not applicable (real-time control surface, no network I/O)
 
 ## Authentication & Identity
 
 **Auth Provider:**
-- None - No authentication required. Firmware communicates directly over USB to host.
-
-**Security Model:**
-- USB trust model - Host computer and controller establish trust via USB connection
-- No user accounts, tokens, or identity verification
-- MIDI channel 1 is hardcoded; all communication on this channel
+- Custom MCU Protocol challenge-response
+  - Implementation: `src/mcuProtocol.cpp` - validateChallengeResponse()
+  - Device identity hardcoded: "PHAEDR\0"
+  - Challenge bytes: static (0x7A, 0x6B, 0x5C, 0x4D)
+  - No user login; DAW (Logic Pro, Ableton, etc.) responds to handshake
 
 ## Monitoring & Observability
 
 **Error Tracking:**
-- None - No external error tracking service
+- None configured
 
 **Logs:**
-- Serial output to USB Serial port when `-DUSB_MIDI_SERIAL` build flag is enabled
-  - Location: Serial monitor via `pio device monitor`
-  - Debug messages: MIDI events logged via `Serial.println()` statements
-  - Examples in `src/main.cpp`:
-    - `Serial.println("CONTROL CHANGE")` when CC message received
-    - `Serial.println("HANDLE START")` on MIDI Start message
-    - `Serial.println("HANDLE CLOCK")` on MIDI Clock message
-
-**No Cloud Monitoring:**
-- No telemetry, analytics, or remote monitoring
+- Serial debug output (optional, enabled via `-DUSB_MIDI_SERIAL` build flag)
+  - Monitor with: `pio device monitor`
+  - No persistent logging
 
 ## CI/CD & Deployment
 
 **Hosting:**
-- Embedded firmware on Teensy 3.5 microcontroller
-- No cloud hosting required
-- No remote deployment capability
+- Embedded firmware (Teensy 3.5 microcontroller) — no cloud deployment
+- Local build and upload via USB cable
 
 **CI Pipeline:**
-- None - No CI/CD infrastructure detected
-- Manual build and upload via PlatformIO CLI
-- No automated testing infrastructure
+- None configured
 
-**Firmware Updates:**
-- Manual: USB upload via `pio run --target upload`
-- Each update requires physical USB connection and re-programming of microcontroller
+**Upload:**
+- `pio run --target upload` triggers Teensy bootloader automatically
 
 ## Environment Configuration
 
-**Required Environment Variables:**
-- None - Firmware does not use environment variables
-- All configuration is compiled into firmware at build time
+**Required env vars:**
+- None
 
-**Hardware Pin Configuration:**
-- Defined in compile-time in `src/pinDefines.h`
-- Cannot be changed without recompilation
-- Pin assignments cannot be externalized
-
-**Secrets Location:**
-- None - No secrets, API keys, or credentials used
-- No `.env` file required or supported
+**Secrets location:**
+- No secrets; MCU challenge bytes are static and hardcoded in firmware
 
 ## Webhooks & Callbacks
 
-**Incoming Webhooks:**
-- None - Firmware does not receive HTTP webhooks
-- Receives MIDI CC messages over USB (not HTTP)
+**Incoming:**
+- MIDI Note On/Off (from DAW/Logic Pro)
+  - Handler: `handleNoteOn()`, `handleNoteOff()` in `src/main.cpp`
+  - Routes to: `InputManager.handleNoteMessage()` → `NoteRegistry` → LED state updates
+  - Use case: DAW sends note on/off to update button LEDs based on transport/track state
 
-**Outgoing Webhooks:**
-- None - Firmware does not send HTTP requests
+- MIDI Pitch Bend (from DAW/Logic Pro, channels 1-8)
+  - Handler: `handlePitchBend()` in `src/main.cpp`
+  - Routes to: `InputManager.setFaderDawValue()` → Fader pickup mode
+  - Use case: DAW sends fader position feedback (14-bit value) for pickup detection and bank switching
+  - Range: Channels 1-8 map to fader 1-8; value +8192 offset to -8192..+8191 signed range
 
-**MIDI Callbacks (Hardware Events):**
-- USB MIDI handlers registered in `src/main.cpp`:
-  - `handleControlChangeMessage()` - Incoming CC messages from DAW (LED feedback)
-  - `handleStart()` - MIDI Start message (transport control)
-  - `handleClock()` - MIDI Clock message (timing sync)
-  - `handleStop()` - MIDI Stop message (transport control)
+- MIDI SysEx (System Exclusive)
+  - Handler: `handleSysEx()` in `src/main.cpp`
+  - Routes to: `MCUProtocol.handleSysEx()` → handshake authentication
+  - Use case: DAW responds to MCU protocol handshake query
 
-## MIDI CC Message Map
+**Outgoing:**
+- MIDI CC (Control Change)
+  - Sent on button/knob/slider change
+  - Grid buttons: CC 102-117 (velocity 127 = pressed, 0 = released)
+  - Track buttons: MIDI Note On/Off (notes 0-7 = Arm, 8-15 = Solo, 16-23 = Mute, 46-47 = Bank navigation)
+  - Knobs: CC 16-23 (relative VPot encoder format: 0x01 = CCW -1 step, 0x41 = CW +1 step)
+  - Sliders (Faders): MIDI Pitch Bend on channels 1-8 (14-bit value 0-16383)
 
-**Grid Buttons (16):**
-- CC 102-117 - Send CC 127 (on) or 0 (off) to DAW
+- MIDI SysEx (System Exclusive)
+  - Sent during handshake: unsolicited query to DAW to initiate authentication
+  - Message format: F0 00 00 66 14 [identity] [challenge] F7
+  - Retry: Every 5 seconds if no response, until handshake completes
 
-**Track Buttons (8):**
-- CC 20-27 - Send CC 127 (on) or 0 (off) to DAW
+## MIDI CC Mapping Reference
 
-**Rotary Knobs (8):**
-- CC 14-15, 28-31, 118-119 - Send values 0-127 to DAW
+**Input → DAW (Controller sends):**
 
-**Sliders (8):**
-- CC 3, 9, 85-90 - Send values 0-127 to DAW
+| Type | Count | MIDI Channel | Values/Format | Notes |
+|------|-------|--------------|---------------|-------|
+| Grid buttons | 16 | 1 | CC 102-117 (vel 127/0) | Button press/release |
+| Track buttons (Arm) | 8 | 1 | Note 0-7 (vel 127/0) | MCU protocol: note on = armed |
+| Track buttons (Solo) | 8 | 1 | Note 8-15 (vel 127/0) | MCU protocol |
+| Track buttons (Mute) | 8 | 1 | Note 16-23 (vel 127/0) | MCU protocol |
+| Bank Left | 1 | 1 | Note 46 (vel 127) | Bank shift << |
+| Bank Right | 1 | 1 | Note 47 (vel 127) | Bank shift >> |
+| Knobs (VPot) | 8 | 1 | CC 16-23 (rel: 0x01=CCW, 0x41=CW) | Relative encoder format |
+| Sliders (Faders) | 8 | 1-8 | Pitch Bend (14-bit 0-16383) | Channel = fader index + 1 |
 
-**All messages:** Channel 1, standardized MIDI CC format
+**Output ← DAW (DAW sends to update LEDs):**
+
+| Type | MIDI Type | Channel | Values | Notes |
+|------|-----------|---------|--------|-------|
+| Grid button LEDs | Note On | 1 | Notes (various) | Velocity: 127=on, 0=off, 1=blink (Phase 2) |
+| Track button LEDs | Note On | 1 | Notes (various) | Velocity: 127=on, 0=off |
+| Fader feedback | Pitch Bend | 1-8 | 14-bit 0-16383 | Channel = fader index + 1; triggers pickup mode |
+
+## Hardware Interfaces
+
+**GPIO (General Purpose I/O):**
+- 24 digital input pins: button switches (16 grid + 8 track buttons)
+  - Pin assignments: `src/pinDefines.h` (K1_SW-K16_SW, P1_SW-P8_SW)
+  - Debounce: 20ms (via Bounce2 library)
+
+- 24 digital output pins: LED drivers (16 grid + 8 track LEDs)
+  - Pin assignments: `src/pinDefines.h` (LED_K1-LED_K16, LED_P1-LED_P8)
+  - Control: SoftPWM with brightness 0-180 (180/255 = 70.6% duty cycle for power budget)
+  - Fade support: SoftPWM allows gradual brightness transitions
+
+**ADC (Analog-to-Digital Converter):**
+- 8 knob analog inputs (10-bit resolution, 0-1023 ADC units)
+  - Pin assignments: `src/pinDefines.h` (KNOB_1-KNOB_8: pins 15-19, A10-A12)
+  - Noise threshold: 3 ADC units (±1.5 units tolerance)
+  - Relative encoder tuning: ADC_PER_STEP = 8 (1023 / 8 ≈ 128 steps per full sweep)
+
+- 8 slider analog inputs (10-bit resolution, 0-1023 ADC units)
+  - Pin assignments: `src/pinDefines.h` (SLIDE_1-SLIDE_8: pins A13-A15, A20-A22, A0, A6)
+  - Noise threshold: 48 ADC units (proportional to 3-unit knob threshold, mapped to 14-bit MIDI range 0-16383)
+  - Pickup mode: Detects bank switches (>1024 unit gap between physical and DAW position)
 
 ---
 
-*Integration audit: 2026-02-20*
+*Integration audit: 2026-03-02*
