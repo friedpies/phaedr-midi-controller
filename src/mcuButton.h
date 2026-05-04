@@ -24,6 +24,9 @@ public:
     bool isBlinking() const;
     int getLedPin() const;
     int getNoteNum() const;
+    void setInvertLed(bool invert) { _invertLed = invert; }
+    void setActive(bool active) { _active = active; }
+    void setLightWhileHeld(bool v) { _lightWhileHeld = v; }
 
 private:
     int _buttonPin;
@@ -31,6 +34,9 @@ private:
     int _noteNum;
     int _debounceTime;
     bool _hasLed;  // false for buttons with no LED (Stop btn 15, Play btn 16)
+    bool _invertLed = false;
+    bool _active = true;
+    bool _lightWhileHeld = false;
     Bounce _bounce;
     bool     _blinking      = false;
     uint16_t _blinkPeriodMs = 500;

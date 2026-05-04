@@ -76,8 +76,10 @@
 #define LED_P8 51
 
 
-// USB power budget: 24 LEDs × ~20mA peak × (LED_MAX_BRIGHTNESS/255) duty + ~150mA Teensy <= 500mA
-// 180/255 = 70.6% duty → ~14.1mA avg per LED → 24 × 14.1 + 150 = ~489mA max
-#define LED_MAX_BRIGHTNESS 180
+// LED_MAX_BRIGHTNESS is the per-LED "intended" cap. The USB 500 mA power budget is enforced
+// dynamically by LedBudget, which sums intended brightness across lit LEDs and scales all
+// of them proportionally if the total would exceed the shared cap. With few LEDs lit, each
+// runs at full 255; with all 24 lit, each scales to ~180 (equivalent to the old static cap).
+#define LED_MAX_BRIGHTNESS 255
 
 #endif

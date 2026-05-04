@@ -1,5 +1,6 @@
 #include "mcuButton.h"
 #include "pinDefines.h"
+#include "ledBudget.h"
 
 MCUButton::MCUButton()
     : _buttonPin(-1), _ledPin(-1), _noteNum(-1), _debounceTime(20), _hasLed(false)
@@ -28,8 +29,9 @@ void MCUButton::init()
     _bounce.attach(_buttonPin, INPUT_PULLUP);
     _bounce.interval(_debounceTime);
     if (_hasLed) {
-        SoftPWMSet(_ledPin, 0);
+        SoftPWMSet(_ledPin, 0);  // register pin with SoftPWM library
         SoftPWMSetFadeTime(_ledPin, 125, 125);
+        LedBudget::set(_ledPin, 0);
     }
 }
 
@@ -38,6 +40,10 @@ void MCUButton::read()
     // Skip entirely if not configured (default-constructed sentinel state)
     if (_buttonPin < 0) return;
     _bounce.update();
+    if (_lightWhileHeld && _hasLed) {
+        if (_bounce.fell()) LedBudget::set(_ledPin, LED_MAX_BRIGHTNESS);
+        if (_bounce.rose()) LedBudget::set(_ledPin, 0);
+    }
     // Skip MIDI output for unmapped buttons (noteNum < 0 = no assigned MCU note)
     if (_noteNum < 0) return;
     if (_bounce.fell()) {
@@ -57,12 +63,13 @@ bool MCUButton::poll()
 
 void MCUButton::setLedState(uint8_t velocity)
 {
-    if (!_hasLed) return;
+    if (!_hasLed || !_active) return;
+    if (_invertLed) velocity = (velocity == 127) ? 0 : (velocity == 0) ? 127 : velocity;
     if (velocity == 0) {
         stopBlink();                     // stop blink, LED goes dark
     } else if (velocity == 127) {
         stopBlink();                     // stop blink first
-        SoftPWMSet(_ledPin, LED_MAX_BRIGHTNESS);  // then set solid on
+        LedBudget::set(_ledPin, LED_MAX_BRIGHTNESS);  // then set solid on
     }
     // velocity == 1 from Logic = "blink" command; handled by pickup FSM — ignore here
     // (pickup FSM manages its own startBlink/stopBlink lifecycle)
@@ -76,7 +83,7 @@ void MCUButton::startBlink(uint16_t periodMs)
         _blinking    = true;
         _blinkPhase  = true;  // start with LED on
         _lastBlinkMs = millis();
-        SoftPWMSet(_ledPin, LED_MAX_BRIGHTNESS);
+        LedBudget::set(_ledPin, LED_MAX_BRIGHTNESS);
     }
     // If already blinking, only update period — do not reset phase to avoid flicker
 }
@@ -85,7 +92,7 @@ void MCUButton::stopBlink()
 {
     _blinking   = false;
     _blinkPhase = false;
-    if (_hasLed) SoftPWMSet(_ledPin, 0);  // go dark immediately — no confirmation animation
+    if (_hasLed) LedBudget::set(_ledPin, 0);  // go dark immediately — no confirmation animation
 }
 
 void MCUButton::updateBlink()
@@ -95,7 +102,7 @@ void MCUButton::updateBlink()
     uint32_t halfPeriod = _blinkPeriodMs / 2;
     if (now - _lastBlinkMs >= halfPeriod) {
         _blinkPhase  = !_blinkPhase;
-        SoftPWMSet(_ledPin, _blinkPhase ? LED_MAX_BRIGHTNESS : 0);
+        LedBudget::set(_ledPin, _blinkPhase ? LED_MAX_BRIGHTNESS : 0);
         _lastBlinkMs = now;
     }
 }

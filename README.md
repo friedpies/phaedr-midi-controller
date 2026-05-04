@@ -1,6 +1,8 @@
 # Phaedr MIDI Controller
 
-![Phaedr MIDI Controller](./assets/cover.png)
+![Phaedr MIDI Controller](./assets/cover.jpg)
+
+![Phaedr MIDI Controller — handheld](./assets/photo-hand.jpg)
 
 See the [hackaday](https://hackaday.io/project/204994-phaedr-midi-controller) project
 

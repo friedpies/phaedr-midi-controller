@@ -3,6 +3,7 @@
 #include "pinDefines.h"
 #include "inputManager.h"
 #include "mcuProtocol.h"
+#include "ledBudget.h"
 
 InputManager inputManager;
 
@@ -24,22 +25,22 @@ static void playStartupAnimation()
     for (int sweep = 0; sweep < 2; sweep++) {
         // Forward: pulse travels K1 → P8
         for (int i = 0; i < N; i++) {
-            SoftPWMSet(allLeds[i], LED_MAX_BRIGHTNESS);
-            if (i >= WINDOW) SoftPWMSet(allLeds[i - WINDOW], 0);
+            LedBudget::set(allLeds[i], LED_MAX_BRIGHTNESS);
+            if (i >= WINDOW) LedBudget::set(allLeds[i - WINDOW], 0);
             delay(STEP);
         }
         // Fade out trailing window, pause before reversing
-        for (int i = N - WINDOW; i < N; i++) SoftPWMSet(allLeds[i], 0);
+        for (int i = N - WINDOW; i < N; i++) LedBudget::set(allLeds[i], 0);
         delay(150);
 
         // Backward: pulse travels P8 → K1
         for (int i = N - 1; i >= 0; i--) {
-            SoftPWMSet(allLeds[i], LED_MAX_BRIGHTNESS);
-            if (i + WINDOW < N) SoftPWMSet(allLeds[i + WINDOW], 0);
+            LedBudget::set(allLeds[i], LED_MAX_BRIGHTNESS);
+            if (i + WINDOW < N) LedBudget::set(allLeds[i + WINDOW], 0);
             delay(STEP);
         }
         // Fade out trailing window, pause before next sweep (or ending)
-        for (int i = WINDOW - 1; i >= 0; i--) SoftPWMSet(allLeds[i], 0);
+        for (int i = WINDOW - 1; i >= 0; i--) LedBudget::set(allLeds[i], 0);
         delay(150);
     }
     delay(200);  // final settle

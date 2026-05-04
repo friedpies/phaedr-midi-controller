@@ -41,6 +41,12 @@ private:
 
     int8_t _selectedTrack = -1;  // -1 = none; 0–6 = tracks 1–7; 7 = master (P8)
 
+    // Per-fader anchor: position at the last time this fader fired a SELECT.
+    // A fader move only counts as "intent to select" if it travels more than
+    // FADER_SELECT_THRESHOLD from this anchor — prevents jitter/hand-rest from
+    // spuriously grabbing focus. -1 = uninitialized; seeded on first valid read.
+    int _faderSelectAnchor[NUM_TRACKS] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+
     void triggerRipple(int originIdx);  // compute distances, reset state, clear LEDs
 
     // MCUButton arrays — default-constructed here, configured in init() via setup()

@@ -2,7 +2,6 @@
 #define fader_h
 
 #include <Arduino.h>
-#include "mcuButton.h"
 
 /*
  * MCU-06: Knob CC Reassignment Reference (for Plan 05 InputManager wiring)
@@ -37,15 +36,21 @@ public:
     // setup() for two-phase init (default-construct array, then configure in init())
     void setup(int pin, int midiChannel);
     bool read();
+    int  getLast14bit() const { return _lastFader14bit; }  // -1 until first read
 
     void setDawValue(int value14bit);         // PICK-01: store DAW value, detect bank switch
-    void enterPickupMode();                   // set OUT_OF_SYNC, reset lazy-reveal flag
-    void setChannelButton(MCUButton* btn);   // wire to corresponding P1–P8 button
+    void enterPickupMode();                   // set OUT_OF_SYNC
 
     // Noise threshold: proportionally equivalent to Potentiometer's ANALOG_NOISE=3
     // on 0-1023 ADC mapped to 0-16383 range. 3/1023 * 16383 ≈ 48.
     // Increase to 64 or 96 if Logic fader display shows jitter.
     static const int FADER_NOISE_THRESHOLD = 48;
+
+    // Select-intent threshold: how far the fader must move from its last-select anchor
+    // before a hand-rest counts as "I want this track focused." Must be well above
+    // FADER_NOISE_THRESHOLD so ADC jitter never trips it. 384 ≈ 3 in 7-bit MIDI ≈ 2.3% travel.
+    // Raise if you still see spurious selects from resting a hand on faders.
+    static const int FADER_SELECT_THRESHOLD = 384;
 
     // PICK-02 / PICK-06: pickup deadband and bank switch threshold (all in 14-bit units)
     // PICKUP_DEADBAND: ~128 = ≈1 in 7-bit MIDI. Must be > FADER_NOISE_THRESHOLD (48).
@@ -63,8 +68,6 @@ private:
 
     int         _dawValue14bit  = -1;      // -1 = no DAW value received yet
     PickupState _pickupState    = SYNCED;
-    bool        _blinkRevealed  = false;   // lazy reveal: true after first interaction in OUT_OF_SYNC
-    MCUButton*  _channelBtn     = nullptr;
 };
 
 #endif

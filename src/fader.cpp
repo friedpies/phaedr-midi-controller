@@ -17,15 +17,8 @@ void Fader::setup(int pin, int midiChannel)
     _lastFader14bit = -1;
 }
 
-void Fader::setChannelButton(MCUButton* btn) {
-    _channelBtn = btn;
-}
-
 void Fader::enterPickupMode() {
-    _pickupState   = OUT_OF_SYNC;
-    _blinkRevealed = false;
-    // NOTE: do NOT call _channelBtn->startBlink() here — blink is lazily revealed
-    // on first user interaction, per CONTEXT.md: "no visual noise by default"
+    _pickupState = OUT_OF_SYNC;
 }
 
 void Fader::setDawValue(int newValue14bit) {
@@ -70,38 +63,19 @@ bool Fader::read() {
     _lastFader14bit = fader14bit;
 
     if (_pickupState == OUT_OF_SYNC) {
-        // --- Lazy blink reveal (CONTEXT.md: no visual noise on bank switch) ---
-        // On first significant move while OUT_OF_SYNC: reveal the blink.
-        // On subsequent moves: refresh blink period to encode current distance.
-        if (_dawValue14bit >= 0 && _channelBtn != nullptr) {
-            int distance = abs(fader14bit - _dawValue14bit);
-            // Map distance 0..16383 → period 600..200ms (faster = farther from target)
-            // Using Arduino map(): linear interpolation between the two extremes.
-            uint16_t period = (uint16_t)map(
-                min(distance, 16383), 0, 16383, 600, 200);
-            _channelBtn->startBlink(period);
-            _blinkRevealed = true;
-        }
-
-        // --- Crossover detection (PICK-02, PICK-04, PICK-06) ---
-        // Boundary edge case (PICK-06): both physical and DAW at rail → immediate pickup
+        // Crossover detection: silently ignore output until the physical fader
+        // crosses the DAW value, then snap and resume normal output.
         bool bothAtZero = (fader14bit <= PICKUP_DEADBAND &&
                            _dawValue14bit >= 0 && _dawValue14bit <= PICKUP_DEADBAND);
         bool bothAtMax  = (fader14bit >= (16383 - PICKUP_DEADBAND) &&
                            _dawValue14bit >= (16383 - PICKUP_DEADBAND));
-        // Normal crossover: physical enters deadband around DAW value
         bool inDeadband = (_dawValue14bit >= 0 &&
                            abs(fader14bit - _dawValue14bit) <= PICKUP_DEADBAND);
 
         if (bothAtZero || bothAtMax || inDeadband) {
             _pickupState = SYNCED;
-            if (_channelBtn != nullptr) _channelBtn->stopBlink();
-            // PICK-04: immediately send snap value so DAW snaps to match physical position
-            // CRITICAL: Teensyduino sendPitchBend expects signed -8192 to +8191.
-            // MCU spec uses 0-16383. Apply -8192 offset to convert.
             usbMIDI.sendPitchBend(fader14bit - 8192, _midiChannel);
         }
-        // Physical movement during OUT_OF_SYNC still counts for track selection
         return !firstRead;
     }
 

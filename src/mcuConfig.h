@@ -15,17 +15,10 @@
 // Loop/Punch/Metronome in Logic, observe which note numbers appear in Serial output
 // (add temporary Serial.print(note) in handleNoteOn if needed), then update below.
 
-// Bank navigation (sent hardware → Logic to shift the 8-channel bank window)
-#define MCU_NOTE_BANK_LEFT       46   // Bank << — shift bank 8 tracks left
-#define MCU_NOTE_BANK_RIGHT      47   // Bank >> — shift bank 8 tracks right
-
 // Track strip function note bases (MCU protocol, channel 1)
 #define MCU_NOTE_ARM_BASE         0   // Arm  Ch1-Ch8: notes 0-7
 #define MCU_NOTE_SOLO_BASE        8   // Solo Ch1-Ch8: notes 8-15
 #define MCU_NOTE_MUTE_BASE       16   // Mute Ch1-Ch8: notes 16-23
-// Input monitoring — not standard MCU, UNVERIFIED. Verify with Logic MIDI monitor
-// same procedure as mode button notes in RESEARCH.md Pitfall 5.
-#define MCU_NOTE_INPUT_MON_BASE  47
 
 // MCU note numbers for transport mode state LEDs
 // Loop/Cycle button state:
@@ -43,10 +36,23 @@
 #define MCU_NOTE_PLAY           94  // Transport: Play
 #define MCU_NOTE_RECORD         95  // Transport: Record
 
+// Session action notes (Logic Pro MCU function buttons)
+#define MCU_NOTE_SAVE           50  // Save project
+#define MCU_NOTE_UNDO           51  // Undo
+
+// User-assignable function keys — bind in Logic Key Commands → Mackie Control
+#define MCU_NOTE_F1             54
+#define MCU_NOTE_F2             55
+#define MCU_NOTE_F3             56
+#define MCU_NOTE_F4             57
+#define MCU_NOTE_F5             58
+#define MCU_NOTE_F6             59
+#define MCU_NOTE_F7             60
+#define MCU_NOTE_F8             61
+
 // Grid button indices (0-based) for mode LED feedback from Logic.
 // K13 (index 12) is Loop — registered directly in init(), no constant needed.
-// K10 (index 9) and K11 (index 10) host Punch/Metronome until reassigned.
-#define MCU_PUNCH_GRID_INDEX    9   // K10 — Punch In LED
-#define MCU_METRO_GRID_INDEX    10  // K11 — Metronome LED
+#define MCU_METRO_GRID_INDEX    0   // K1 — Metronome LED
+#define MCU_PUNCH_GRID_INDEX    1   // K2 — Punch In LED
 
 #endif // mcu_config_h
